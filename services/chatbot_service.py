@@ -194,6 +194,17 @@ class ChatbotService:
         self.get_session_history = get_session_history
         print("[ChatbotService] 세션 히스토리 저장소 초기화 완료")
 
+        # 5. 게임 상태 관리자 초기화
+        from .game_state_manager import GameStateManager
+        save_dir = BASE_DIR / "static" / "data" / "game_states"
+        self.game_manager = GameStateManager(save_dir)
+        print("[ChatbotService] 게임 상태 관리자 초기화 완료")
+
+        # 6. 이벤트 감지기 초기화
+        from .event_detector import EventDetector
+        self.event_detector = EventDetector(self.llm)
+        print("[ChatbotService] 이벤트 감지기 초기화 완료")
+
         print("[ChatbotService] 초기화 완료")
     
     
@@ -423,18 +434,19 @@ class ChatbotService:
             return (None, None, None)
     
     
-    def _build_prompt(self, context: str = None):
+    def _build_prompt(self, context: str = None, session_id: str = None):
         """
         LangChain ChatPromptTemplate 구성
 
         Args:
             context (str): RAG 검색 결과 (선택)
+            session_id (str): 사용자 세션 ID (게임 상태 로드용)
 
         Returns:
             ChatPromptTemplate: LangChain 프롬프트 템플릿
 
         설명:
-        - SystemMessage: 시스템 프롬프트 + RAG 컨텍스트
+        - SystemMessage: 시스템 프롬프트 + 게임 상태 + RAG 컨텍스트
         - MessagesPlaceholder: 대화 히스토리 자동 삽입 (RunnableWithMessageHistory가 처리)
         - HumanMessage: 사용자 입력
         """
@@ -454,7 +466,26 @@ class ChatbotService:
             for rule in rules:
                 system_parts.append(f"- {rule}")
 
-        # 2. RAG 컨텍스트 포함
+        # 2. 게임 상태 정보 추가
+        if session_id:
+            game_state = self.game_manager.get_or_create(session_id)
+
+            state_info = f"""
+
+[현재 게임 상태]
+- 현재 시점: {game_state.current_month}월
+- 친밀도: {game_state.stats.intimacy}/100
+- 멘탈: {game_state.stats.mental}/100
+- 체력: {game_state.stats.stamina}/100
+- 힘: {game_state.stats.power}/100
+- 주루: {game_state.stats.speed}/100
+
+[캐릭터 행동 가이드]
+{self._get_behavior_guide(game_state)}
+"""
+            system_parts.append(state_info)
+
+        # 3. RAG 컨텍스트 포함
         if context:
             system_parts.append(f"\n[참고 정보]\n{context}")
 
@@ -471,8 +502,35 @@ class ChatbotService:
         ])
 
         return prompt
-    
-    
+
+
+    def _get_behavior_guide(self, game_state) -> str:
+        """
+        친밀도에 따른 캐릭터 행동 가이드
+
+        Args:
+            game_state: GameState 객체
+
+        Returns:
+            행동 가이드 문자열
+        """
+        intimacy = game_state.stats.intimacy
+
+        if intimacy < 30:
+            return """차갑고 틱틱대는 말투를 유지하세요.
+코치에게 방어적이고 거리를 둡니다.
+싸가지 있어 보이지만, 완전히 무례하지는 않습니다.
+짧고 퉁명스러운 대답을 선호합니다."""
+        elif intimacy < 60:
+            return """조금씩 마음을 열기 시작합니다.
+가끔 솔직한 감정을 표현하지만 여전히 조심스럽습니다.
+코치의 말에 귀를 기울이기 시작하지만 쉽게 인정하지는 않습니다."""
+        else:
+            return """협조적이고 따뜻한 태도를 보입니다.
+코치를 신뢰하고 존중하며, 적극적으로 대화에 참여합니다.
+야구에 대한 열정을 솔직하게 드러냅니다."""
+
+
     def generate_response(self, user_message: str, username: str = "사용자") -> dict:
         """
         사용자 메시지에 대한 챗봇 응답 생성 (LangChain LCEL 기반)
@@ -555,8 +613,8 @@ class ChatbotService:
             else:
                 print(f"[RAG] ✗ No context found (일반 대화 모드)")
 
-            # [3단계] ChatPromptTemplate 구성
-            prompt = self._build_prompt(context=context)
+            # [3단계] ChatPromptTemplate 구성 (게임 상태 포함)
+            prompt = self._build_prompt(context=context, session_id=username)
 
             # [4단계] LCEL 체인 구성 및 실행
             print(f"[LLM] Building LangChain LCEL pipeline...")
@@ -588,12 +646,51 @@ class ChatbotService:
             print(f"[BOT] {reply[:100]}...")
             print(f"[MEMORY] ✓ Conversation automatically saved to session '{username}'")
 
-            # [5단계] 응답 반환
+            # [5단계] 게임 상태 저장
+            self.game_manager.save(username)
+            print(f"[GAME] ✓ Game state saved for '{username}'")
+
+            # [6단계] 이벤트 감지 및 힌트 제공
+            game_state = self.game_manager.get_or_create(username)
+            conversation_history = self.get_session_history(username).messages
+
+            # 이벤트 체크
+            event_info = self.event_detector.check_event(
+                game_state=game_state,
+                conversation_history=conversation_history,
+                recent_messages=10
+            )
+
+            # 힌트 체크 (5번 이상 대화했을 때)
+            hint = None
+            if len(conversation_history) >= 5:
+                hint = self.event_detector.get_hint(
+                    game_state=game_state,
+                    conversation_history=conversation_history,
+                    stuck_threshold=5
+                )
+
+            if event_info:
+                print(f"[EVENT] ✓ Event triggered: {event_info['event_name']}")
+            if hint:
+                print(f"[HINT] ✓ Hint provided: {hint}")
+
+            # [7단계] 응답 반환
             print(f"{'='*50}\n")
-            return {
+            response_dict = {
                 'reply': reply,
                 'image': None  # 이미지 검색 로직은 추후 추가 가능
             }
+
+            # 이벤트 정보 추가 (있을 경우)
+            if event_info:
+                response_dict['event'] = event_info
+
+            # 힌트 추가 (있을 경우)
+            if hint:
+                response_dict['hint'] = hint
+
+            return response_dict
 
         except Exception as e:
             print(f"[ERROR] 응답 생성 실패: {e}")

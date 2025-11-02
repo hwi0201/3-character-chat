@@ -1,0 +1,20 @@
+{
+  "session_id": "박현빈",
+  "current_month": 3,
+  "current_day": 1,
+  "stats": {
+    "intimacy": 0,
+    "mental": 50,
+    "stamina": 50,
+    "power": 30,
+    "speed": 40
+  },
+  "flags": {
+    "backstory_revealed": false,
+    "homerun_flag": false,
+    "steal_phobia_overcome": false
+  },
+  "event_history": [],
+  "special_moments": [],
+  "training_schedule": {}
+}
