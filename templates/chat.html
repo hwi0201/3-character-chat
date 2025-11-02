@@ -328,6 +328,143 @@
         background: #ffd700;
         color: #333;
       }
+
+      /* 하단 버튼 그룹 스타일 */
+      .bottom-actions {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+        z-index: 99;
+      }
+      .action-btn {
+        padding: 12px 20px;
+        background: white;
+        border: 2px solid #764ba2;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #764ba2;
+        transition: all 0.3s;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .action-btn:hover {
+        background: #764ba2;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(118, 75, 162, 0.3);
+      }
+      .action-btn:active {
+        transform: translateY(0);
+      }
+
+      /* 상세 모달 스타일 */
+      .detail-modal {
+        display: none;
+        position: fixed;
+        z-index: 1002;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.7);
+      }
+      .detail-modal-content {
+        background-color: #fff;
+        margin: 5% auto;
+        padding: 30px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 600px;
+        position: relative;
+        animation: slideIn 0.3s;
+      }
+      .detail-modal-close {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        background: none;
+        border: none;
+        font-size: 2rem;
+        cursor: pointer;
+        color: #999;
+      }
+      .detail-modal-close:hover {
+        color: #333;
+      }
+      .stats-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin: 20px 0;
+      }
+      .stat-card {
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+      }
+      .stat-card-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #764ba2;
+        margin: 10px 0;
+      }
+      .stat-card-label {
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      /* 힌트 리스트 스타일 */
+      .hint-list {
+        list-style: none;
+        padding: 0;
+      }
+      .hint-item {
+        background: #f9f9f9;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-left: 4px solid #764ba2;
+      }
+      .hint-item:hover {
+        background: #764ba2;
+        color: white;
+        transform: translateX(5px);
+      }
+
+      /* 특별한 순간 카드 */
+      .moment-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin: 15px 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+      .moment-card h4 {
+        margin: 0 0 10px 0;
+      }
+      .moment-card p {
+        margin: 5px 0;
+        opacity: 0.9;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+      }
+      .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 10px;
+      }
     </style>
   </head>
   <body>
@@ -413,6 +550,99 @@
           placeholder="메시지를 입력하세요..."
         />
         <button class="send-btn" id="send-btn">전송</button>
+      </div>
+    </div>
+
+    <!-- 하단 버튼 그룹 -->
+    <div class="bottom-actions">
+      <button class="action-btn" id="btn-stats">📊 스탯 상세</button>
+      <button class="action-btn" id="btn-advance">📅 다음 달</button>
+      <button class="action-btn" id="btn-hints">💡 추천 응답</button>
+      <button class="action-btn" id="btn-moments">🎴 특별한 순간</button>
+    </div>
+
+    <!-- 스탯 상세 모달 -->
+    <div id="statsModal" class="detail-modal">
+      <div class="detail-modal-content">
+        <button class="detail-modal-close" onclick="closeDetailModal('statsModal')">
+          &times;
+        </button>
+        <h2>📊 민석이 스탯 상세</h2>
+
+        <div class="stats-detail-grid">
+          <div class="stat-card">
+            <div class="stat-card-label">💖 친밀도</div>
+            <div class="stat-card-value" id="detail-intimacy">0</div>
+            <div class="stat-card-label" id="detail-intimacy-level">매우 낮음</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">🧠 멘탈</div>
+            <div class="stat-card-value" id="detail-mental">50</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">💪 체력</div>
+            <div class="stat-card-value" id="detail-stamina">50</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">💥 힘</div>
+            <div class="stat-card-value" id="detail-power">30</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">🏃 주루</div>
+            <div class="stat-card-value" id="detail-speed">40</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0">
+          <p style="margin: 10px 0; color: #666">
+            <strong>📅 현재:</strong> <span id="detail-month">3월</span>
+          </p>
+          <p style="margin: 10px 0; color: #666">
+            <strong>🎯 드래프트까지:</strong> <span id="detail-months-left">6개월</span>
+          </p>
+          <p style="margin: 10px 0; color: #666">
+            <strong>📜 이벤트 히스토리:</strong>
+          </p>
+          <ul id="detail-events" style="margin: 5px 0; padding-left: 20px; color: #666">
+            <li>아직 이벤트가 없습니다</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 추천 응답 모달 -->
+    <div id="hintsModal" class="detail-modal">
+      <div class="detail-modal-content">
+        <button class="detail-modal-close" onclick="closeDetailModal('hintsModal')">
+          &times;
+        </button>
+        <h2>💡 추천 응답</h2>
+        <p style="color: #666; margin-bottom: 20px">
+          현재 상황에 맞는 대화를 클릭하여 입력하세요
+        </p>
+        <ul class="hint-list" id="hints-list">
+          <li class="hint-item">로딩 중...</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 특별한 순간 모달 -->
+    <div id="momentsModal" class="detail-modal">
+      <div class="detail-modal-content">
+        <button class="detail-modal-close" onclick="closeDetailModal('momentsModal')">
+          &times;
+        </button>
+        <h2>🎴 특별한 순간</h2>
+        <p style="color: #666; margin-bottom: 20px">
+          민석이와 함께한 소중한 순간들
+        </p>
+        <div id="moments-list">
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <p>아직 특별한 순간이 없습니다</p>
+            <p style="font-size: 0.9rem">민석이와 대화하며 추억을 만들어보세요!</p>
+          </div>
+        </div>
       </div>
     </div>
 

@@ -294,6 +294,215 @@ function showHintNotification(hint) {
   }, 10000);
 }
 
+// ============================================================================
+// 게임 API 함수들
+// ============================================================================
+
+// 스탯 상세 조회
+async function fetchStatsDetail() {
+  try {
+    const response = await fetch(`/api/game/stats?username=${username}`);
+    const data = await response.json();
+
+    if (data.success) {
+      // 모달에 데이터 표시
+      document.getElementById("detail-intimacy").textContent = data.stats.intimacy;
+      document.getElementById("detail-mental").textContent = data.stats.mental;
+      document.getElementById("detail-stamina").textContent = data.stats.stamina;
+      document.getElementById("detail-power").textContent = data.stats.power;
+      document.getElementById("detail-speed").textContent = data.stats.speed;
+
+      document.getElementById("detail-intimacy-level").textContent =
+        data.intimacy_level;
+      document.getElementById("detail-month").textContent = `${data.month}월`;
+      document.getElementById("detail-months-left").textContent = `${data.months_until_draft}개월`;
+
+      // 이벤트 히스토리
+      const eventsList = document.getElementById("detail-events");
+      if (data.event_history.length > 0) {
+        eventsList.innerHTML = data.event_history
+          .map((event) => `<li>${event}</li>`)
+          .join("");
+      } else {
+        eventsList.innerHTML = "<li>아직 이벤트가 없습니다</li>";
+      }
+
+      openDetailModal("statsModal");
+    }
+  } catch (err) {
+    console.error("스탯 조회 실패:", err);
+    alert("스탯 조회에 실패했습니다.");
+  }
+}
+
+// 다음 달로 진행
+async function advanceMonth() {
+  if (!confirm("다음 달로 진행하시겠습니까?")) return;
+
+  try {
+    const response = await fetch("/api/game/advance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: username }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alert(data.message);
+
+      // 이벤트가 있으면 표시
+      if (data.event) {
+        showEventNotification(data.event);
+      }
+
+      // 스탯 패널 업데이트 (API 다시 호출)
+      const statsResponse = await fetch(`/api/game/stats?username=${username}`);
+      const statsData = await statsResponse.json();
+      if (statsData.success) {
+        updateStatsUI(statsData);
+      }
+    } else {
+      alert(data.message || "월 진행에 실패했습니다.");
+    }
+  } catch (err) {
+    console.error("월 진행 실패:", err);
+    alert("월 진행에 실패했습니다.");
+  }
+}
+
+// 추천 응답 조회
+async function fetchHints() {
+  try {
+    const response = await fetch(`/api/game/hints?username=${username}`);
+    const data = await response.json();
+
+    if (data.success) {
+      const hintsList = document.getElementById("hints-list");
+      hintsList.innerHTML = data.hints
+        .map(
+          (hint) =>
+            `<li class="hint-item" onclick="useHint('${hint.replace(
+              /'/g,
+              "\\'"
+            )}')">${hint}</li>`
+        )
+        .join("");
+
+      openDetailModal("hintsModal");
+    }
+  } catch (err) {
+    console.error("힌트 조회 실패:", err);
+    alert("힌트 조회에 실패했습니다.");
+  }
+}
+
+// 힌트 사용 (입력창에 자동 입력)
+function useHint(hint) {
+  if (userMessageInput) {
+    userMessageInput.value = hint;
+    userMessageInput.focus();
+  }
+  closeDetailModal("hintsModal");
+}
+
+// 특별한 순간 조회
+async function fetchMoments() {
+  try {
+    const response = await fetch(`/api/game/moments?username=${username}`);
+    const data = await response.json();
+
+    if (data.success) {
+      const momentsList = document.getElementById("moments-list");
+
+      if (data.moments.length > 0) {
+        momentsList.innerHTML = data.moments
+          .map(
+            (moment) => `
+          <div class="moment-card">
+            <h4>${moment.title || "특별한 순간"}</h4>
+            <p>${moment.description || ""}</p>
+            <p style="font-size: 0.9rem; margin-top: 10px">
+              📅 ${moment.date || "날짜 미상"}
+            </p>
+          </div>
+        `
+          )
+          .join("");
+      } else {
+        momentsList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <p>아직 특별한 순간이 없습니다</p>
+            <p style="font-size: 0.9rem">민석이와 대화하며 추억을 만들어보세요!</p>
+          </div>
+        `;
+      }
+
+      openDetailModal("momentsModal");
+    }
+  } catch (err) {
+    console.error("특별한 순간 조회 실패:", err);
+    alert("특별한 순간 조회에 실패했습니다.");
+  }
+}
+
+// 모달 열기/닫기
+function openDetailModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = "block";
+  }
+}
+
+function closeDetailModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = "none";
+  }
+}
+
+// ============================================================================
+// 버튼 이벤트 리스너
+// ============================================================================
+
+// 스탯 상세 버튼
+const btnStats = document.getElementById("btn-stats");
+if (btnStats) {
+  btnStats.addEventListener("click", fetchStatsDetail);
+}
+
+// 다음 달 버튼
+const btnAdvance = document.getElementById("btn-advance");
+if (btnAdvance) {
+  btnAdvance.addEventListener("click", advanceMonth);
+}
+
+// 추천 응답 버튼
+const btnHints = document.getElementById("btn-hints");
+if (btnHints) {
+  btnHints.addEventListener("click", fetchHints);
+}
+
+// 특별한 순간 버튼
+const btnMoments = document.getElementById("btn-moments");
+if (btnMoments) {
+  btnMoments.addEventListener("click", fetchMoments);
+}
+
+// 모달 배경 클릭 시 닫기
+document.querySelectorAll(".detail-modal").forEach((modal) => {
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      modal.style.display = "none";
+    }
+  });
+});
+
+// ============================================================================
+// 페이지 로드
+// ============================================================================
+
 // 페이지 로드 시 초기 메시지 요청
 window.addEventListener("load", () => {
   console.log("페이지 로드 완료");

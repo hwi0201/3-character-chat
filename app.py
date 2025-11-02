@@ -128,6 +128,156 @@ def api_chat():
         print(f"[ERROR] 응답 생성 실패: {e}")
         return jsonify({'reply': '죄송해요, 일시적인 오류가 발생했어요. 다시 시도해주세요.'}), 500
 
+# ============================================================================
+# 게임 관련 API 엔드포인트
+# ============================================================================
+
+@app.route('/api/game/stats', methods=['GET'])
+def api_get_stats():
+    """현재 게임 스탯 조회"""
+    try:
+        username = request.args.get('username', '사용자')
+
+        from services import get_chatbot_service
+        chatbot = get_chatbot_service()
+        game_state = chatbot.game_manager.get_or_create(username)
+
+        return jsonify({
+            'success': True,
+            'month': game_state.current_month,
+            'day': game_state.current_day,
+            'stats': game_state.stats.to_dict(),
+            'flags': game_state.flags,
+            'event_history': game_state.event_history,
+            'months_until_draft': game_state.get_months_until_draft(),
+            'intimacy_level': chatbot.stat_calculator.get_intimacy_level(game_state.stats.intimacy)
+        })
+    except Exception as e:
+        print(f"[ERROR] 스탯 조회 실패: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/game/advance', methods=['POST'])
+def api_advance_month():
+    """다음 달로 진행"""
+    try:
+        data = request.get_json()
+        username = data.get('username', '사용자')
+
+        from services import get_chatbot_service
+        chatbot = get_chatbot_service()
+        game_state = chatbot.game_manager.get_or_create(username)
+
+        # 9월 이후면 진행 불가
+        if game_state.current_month >= 9:
+            return jsonify({
+                'success': False,
+                'message': '이미 9월입니다. 드래프트를 진행하세요!'
+            })
+
+        # 다음 달로 진행
+        success = chatbot.game_manager.advance_month(username)
+
+        if success:
+            # 이벤트 체크
+            conversation_history = chatbot.get_session_history(username).messages
+            event_info = chatbot.event_detector.check_event(
+                game_state=game_state,
+                conversation_history=conversation_history,
+                recent_messages=10
+            )
+
+            return jsonify({
+                'success': True,
+                'new_month': game_state.current_month,
+                'event': event_info,
+                'message': f'{game_state.current_month}월이 시작되었습니다!'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': '월 진행에 실패했습니다.'
+            })
+
+    except Exception as e:
+        print(f"[ERROR] 월 진행 실패: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/game/hints', methods=['GET'])
+def api_get_hints():
+    """현재 상황에 맞는 추천 응답 가져오기"""
+    try:
+        username = request.args.get('username', '사용자')
+
+        from services import get_chatbot_service
+        chatbot = get_chatbot_service()
+        game_state = chatbot.game_manager.get_or_create(username)
+
+        # 친밀도와 월에 따른 추천 응답
+        intimacy = game_state.stats.intimacy
+        month = game_state.current_month
+
+        # 추천 응답 생성
+        hints = []
+
+        if intimacy < 30:
+            hints = [
+                "안녕? 처음 뵙겠습니다.",
+                "야구 시즌 준비 어때?",
+                "오늘 컨디션은 괜찮아?"
+            ]
+        elif intimacy < 60:
+            hints = [
+                "오늘 훈련 어땠어? 피곤하지 않아?",
+                "최근에 고민 있는 것 같던데, 괜찮아?",
+                "점심은 뭐 먹었어? 영양 관리 잘 하고 있어?"
+            ]
+        else:
+            hints = [
+                "민석아, 요즘 컨디션 최고인 것 같아!",
+                "너의 노력이 정말 대단해. 계속 응원할게!",
+                "드래프트까지 함께 가자!"
+            ]
+
+        # 월별 추가 힌트
+        if month == 3:
+            hints.append("3월이니까 기초 체력부터 다져볼까?")
+        elif month >= 5:
+            hints.append("슬럼프 겪고 있지는 않아?")
+
+        return jsonify({
+            'success': True,
+            'hints': hints,
+            'intimacy_level': chatbot.stat_calculator.get_intimacy_level(intimacy)
+        })
+
+    except Exception as e:
+        print(f"[ERROR] 힌트 조회 실패: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/game/moments', methods=['GET'])
+def api_get_moments():
+    """특별한 순간 목록 조회"""
+    try:
+        username = request.args.get('username', '사용자')
+
+        from services import get_chatbot_service
+        chatbot = get_chatbot_service()
+        game_state = chatbot.game_manager.get_or_create(username)
+
+        return jsonify({
+            'success': True,
+            'moments': game_state.special_moments,
+            'count': len(game_state.special_moments)
+        })
+
+    except Exception as e:
+        print(f"[ERROR] 특별한 순간 조회 실패: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 # 헬스체크 엔드포인트 (Vercel용)
 @app.route('/health')
 def health():
