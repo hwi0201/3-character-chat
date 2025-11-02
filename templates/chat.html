@@ -700,7 +700,7 @@
         top: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.85);
+        background: rgba(0, 0, 0, 0.95);
         backdrop-filter: blur(10px);
       }
 
@@ -712,14 +712,12 @@
 
       .storybook-container {
         position: relative;
-        width: 90%;
-        max-width: 700px;
-        height: 80vh;
-        max-height: 600px;
+        width: 100%;
+        height: 100%;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        padding: 40px;
+        border-radius: 0;
+        box-shadow: none;
+        padding: 60px 80px;
         overflow: hidden;
         animation: bookOpen 0.6s ease-out;
       }
@@ -1097,6 +1095,182 @@
           padding: 0 20px;
         }
       }
+
+      /* ========================================
+         스토리북 모달 스타일 (간소화 버전)
+         ======================================== */
+
+      .storybook-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+      }
+
+      .storybook-modal.hidden {
+        display: none;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .storybook-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 16px;
+        width: 90%;
+        max-width: 800px;
+        max-height: 90vh;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* 상단: 제목 바 */
+      .storybook-title-bar {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .storybook-title-bar h2 {
+        color: white;
+        margin: 0;
+        font-size: 1.8em;
+        text-align: center;
+      }
+
+      /* 중간: 이미지 영역 */
+      .storybook-image-area {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 30px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        min-height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .storybook-image-area img {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      .no-image-text {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 1.1em;
+        font-style: italic;
+        margin: 0;
+      }
+
+      /* 하단: 텍스트 영역 */
+      .storybook-text-area {
+        padding: 30px;
+        flex: 1;
+        overflow-y: auto;
+        max-height: 300px;
+      }
+
+      .storybook-text-area p {
+        color: white;
+        font-size: 1.15em;
+        line-height: 1.8;
+        margin: 0;
+        white-space: pre-line;
+      }
+
+      /* 네비게이션 바 */
+      .storybook-nav-bar {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .storybook-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid white;
+        color: white;
+        padding: 12px 20px;
+        font-size: 1em;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex: 1;
+      }
+
+      .storybook-btn:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .storybook-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      .storybook-btn.primary {
+        background: white;
+        color: #667eea;
+        font-weight: bold;
+        border-color: white;
+      }
+
+      .storybook-btn.primary:hover {
+        background: #f0f0f0;
+        transform: translateY(-2px);
+      }
+
+      /* 전환 레이어 */
+      .transition-layer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.5s ease;
+      }
+
+      .transition-layer.active {
+        opacity: 1;
+      }
+
+      /* 모바일 반응형 */
+      @media (max-width: 768px) {
+        .storybook-modal .storybook-content {
+          padding: 20px;
+          max-width: 95%;
+        }
+
+        .storybook-modal .storybook-page h2 {
+          font-size: 1.8em;
+        }
+
+        .storybook-modal .storybook-page p {
+          font-size: 1.1em;
+        }
+
+        .storybook-nav-btn {
+          padding: 10px 15px;
+          font-size: 1em;
+        }
+
+      }
     </style>
   </head>
   <body>
@@ -1384,6 +1558,40 @@
         </div>
       </div>
     </div>
+
+    <!-- ========================================
+         스토리북 모달 (간소화 버전)
+         ======================================== -->
+    <div id="storybook-modal" class="storybook-modal hidden">
+      <div class="storybook-box">
+        <!-- 상단: 제목 -->
+        <div class="storybook-title-bar">
+          <h2 id="storybook-title">3월 - 첫 만남</h2>
+        </div>
+
+        <!-- 중간: 이미지 영역 -->
+        <div class="storybook-image-area">
+          <div id="storybook-image-container">
+            <p class="no-image-text">이미지 없음</p>
+          </div>
+        </div>
+
+        <!-- 하단: 텍스트 영역 -->
+        <div class="storybook-text-area">
+          <p id="storybook-text">스토리 텍스트가 여기에 표시됩니다.</p>
+        </div>
+
+        <!-- 네비게이션 -->
+        <div class="storybook-nav-bar">
+          <button id="storybook-prev" class="storybook-btn" onclick="storybookPrev()">← 이전</button>
+          <button id="storybook-start" class="storybook-btn primary" onclick="storybookStart()">대화 시작하기</button>
+          <button id="storybook-next" class="storybook-btn" onclick="storybookNext()">다음 →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 게임 모드 전환 레이어 -->
+    <div id="transition-layer" class="transition-layer"></div>
 
     <!-- Image Gallery Modal -->
     <div id="imageModal" class="modal">

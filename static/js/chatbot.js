@@ -1,6 +1,37 @@
 console.log("챗봇 JS 로드 완료");
 
+// ============================================================================
+// 전역 상태 관리
+// ============================================================================
+
+const AppState = {
+  // 스토리북 상태
+  storybook: {
+    current: null,          // 현재 스토리북 데이터
+    currentPage: 0,         // 현재 페이지 번호
+    isActive: false         // 스토리북 모드 여부
+  },
+
+  // 온보딩 상태
+  onboarding: {
+    currentPage: 1,
+    totalPages: 5
+  },
+
+  // 카운터
+  counters: {
+    message: 0,
+    notification: 0
+  },
+
+  // 게임 상태 (서버에서 받아옴)
+  game: null
+};
+
+// ============================================================================
 // DOM 요소
+// ============================================================================
+
 const chatArea = document.querySelector(".chat-area");
 const username = chatArea ? chatArea.dataset.username : "사용자";
 const chatLog = document.getElementById("chat-log");
@@ -8,6 +39,22 @@ const userMessageInput = document.getElementById("user-message");
 const sendBtn = document.getElementById("send-btn");
 const videoBtn = document.getElementById("videoBtn");
 const imageBtn = document.getElementById("imageBtn");
+
+// ============================================================================
+// 오류 처리 유틸리티
+// ============================================================================
+
+/**
+ * 사용자 친화적인 오류 메시지 표시
+ * @param {string} userMessage - 사용자에게 표시할 메시지
+ * @param {Error} error - 콘솔에 출력할 오류 객체 (선택)
+ */
+function showError(userMessage, error = null) {
+  if (error) {
+    console.error(error);
+  }
+  appendMessage("bot", `❌ ${userMessage}`);
+}
 
 // 메시지 전송 함수
 async function sendMessage(isInitial = false) {
@@ -102,17 +149,15 @@ async function sendMessage(isInitial = false) {
     if (data.hint) {
       showHintNotification(data.hint);
     }
-  } catch (err) {
-    console.error("메시지 전송 에러:", err);
+  } catch (error) {
     removeMessage(loadingId);
-    appendMessage("bot", "죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.");
+    showError("메시지 전송에 실패했습니다. 다시 시도해주세요.", error);
   }
 }
 
 // 메시지 DOM에 추가
-let messageIdCounter = 0;
 function appendMessage(sender, text, imageSrc = null) {
-  const messageId = `msg-${messageIdCounter++}`;
+  const messageId = `msg-${AppState.counters.message++}`;
   const messageElem = document.createElement("div");
   messageElem.classList.add("message", sender);
   messageElem.id = messageId;
@@ -264,12 +309,9 @@ function updateStatBar(statName, value) {
   }
 }
 
-// 알림 ID 카운터
-let notificationIdCounter = 0;
-
 // 이벤트 알림 표시 (스탯 패널 아래)
 function showEventNotification(eventInfo) {
-  const notifId = `notif-${notificationIdCounter++}`;
+  const notifId = `notif-${AppState.counters.notification++}`;
   const container = document.getElementById("notifications-container");
   if (!container) return;
 
@@ -293,7 +335,7 @@ function showEventNotification(eventInfo) {
 
 // 힌트 알림 표시 (스탯 패널 아래)
 function showHintNotification(hint) {
-  const notifId = `notif-${notificationIdCounter++}`;
+  const notifId = `notif-${AppState.counters.notification++}`;
   const container = document.getElementById("notifications-container");
   if (!container) return;
 
@@ -378,70 +420,25 @@ function showGuideMessage(guide) {
   appendMessage("guide", guideHTML);
 }
 
-// 다음 달로 진행
-async function advanceMonth() {
-  if (!confirm("다음 달로 진행하시겠습니까?")) return;
-
-  try {
-    const response = await fetch("/api/game/advance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: username }),
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-      alert(data.message);
-
-      // 가이드 메시지 표시
-      if (data.guide) {
-        showGuideMessage(data.guide);
-      }
-
-      // 이벤트가 있으면 표시
-      if (data.event) {
-        showEventNotification(data.event);
-      }
-
-      // 스탯 패널 업데이트 (API 다시 호출)
-      const statsResponse = await fetch(`/api/game/stats?username=${username}`);
-      const statsData = await statsResponse.json();
-      if (statsData.success) {
-        updateStatsUI(statsData);
-      }
-    } else {
-      alert(data.message || "월 진행에 실패했습니다.");
-    }
-  } catch (err) {
-    console.error("월 진행 실패:", err);
-    alert("월 진행에 실패했습니다.");
-  }
-}
 
 // 추천 응답 조회
 async function fetchHints() {
-  try {
-    const response = await fetch(`/api/game/hints?username=${username}`);
-    const data = await response.json();
+  const response = await fetch(`/api/game/hints?username=${username}`);
+  const data = await response.json();
 
-    if (data.success) {
-      const hintsList = document.getElementById("hints-list");
-      hintsList.innerHTML = data.hints
-        .map(
-          (hint) =>
-            `<li class="hint-item" onclick="useHint('${hint.replace(
-              /'/g,
-              "\\'"
-            )}')">${hint}</li>`
-        )
-        .join("");
+  if (data.success) {
+    const hintsList = document.getElementById("hints-list");
+    hintsList.innerHTML = data.hints
+      .map(
+        (hint) =>
+          `<li class="hint-item" onclick="useHint('${hint.replace(
+            /'/g,
+            "\\'"
+          )}')">${hint}</li>`
+      )
+      .join("");
 
-      openDetailModal("hintsModal");
-    }
-  } catch (err) {
-    console.error("힌트 조회 실패:", err);
-    alert("힌트 조회에 실패했습니다.");
+    openDetailModal("hintsModal");
   }
 }
 
@@ -456,42 +453,37 @@ function useHint(hint) {
 
 // 특별한 순간 조회
 async function fetchMoments() {
-  try {
-    const response = await fetch(`/api/game/moments?username=${username}`);
-    const data = await response.json();
+  const response = await fetch(`/api/game/moments?username=${username}`);
+  const data = await response.json();
 
-    if (data.success) {
-      const momentsList = document.getElementById("moments-list");
+  if (data.success) {
+    const momentsList = document.getElementById("moments-list");
 
-      if (data.moments.length > 0) {
-        momentsList.innerHTML = data.moments
-          .map(
-            (moment) => `
-          <div class="moment-card">
-            <h4>${moment.title || "특별한 순간"}</h4>
-            <p>${moment.description || ""}</p>
-            <p style="font-size: 0.9rem; margin-top: 10px">
-              📅 ${moment.date || "날짜 미상"}
-            </p>
-          </div>
-        `
-          )
-          .join("");
-      } else {
-        momentsList.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">📭</div>
-            <p>아직 특별한 순간이 없습니다</p>
-            <p style="font-size: 0.9rem">민석이와 대화하며 추억을 만들어보세요!</p>
-          </div>
-        `;
-      }
-
-      openDetailModal("momentsModal");
+    if (data.moments.length > 0) {
+      momentsList.innerHTML = data.moments
+        .map(
+          (moment) => `
+        <div class="moment-card">
+          <h4>${moment.title || "특별한 순간"}</h4>
+          <p>${moment.description || ""}</p>
+          <p style="font-size: 0.9rem; margin-top: 10px">
+            📅 ${moment.date || "날짜 미상"}
+          </p>
+        </div>
+      `
+        )
+        .join("");
+    } else {
+      momentsList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <p>아직 특별한 순간이 없습니다</p>
+          <p style="font-size: 0.9rem">민석이와 대화하며 추억을 만들어보세요!</p>
+        </div>
+      `;
     }
-  } catch (err) {
-    console.error("특별한 순간 조회 실패:", err);
-    alert("특별한 순간 조회에 실패했습니다.");
+
+    openDetailModal("momentsModal");
   }
 }
 
@@ -517,7 +509,7 @@ function closeDetailModal(modalId) {
 // 다음 달 버튼
 const btnAdvance = document.getElementById("btn-advance");
 if (btnAdvance) {
-  btnAdvance.addEventListener("click", advanceMonth);
+  btnAdvance.addEventListener("click", advanceToNextMonth);
 }
 
 // 추천 응답 버튼
@@ -545,10 +537,8 @@ document.querySelectorAll(".detail-modal").forEach((modal) => {
 // 온보딩 스토리북 기능
 // ============================================================================
 
-let currentPage = 1;
-const totalPages = 5;
-
 // 온보딩 표시 체크 및 모달 열기
+// 반환값: 온보딩을 표시했으면 true, 아니면 false
 function checkAndShowOnboarding() {
   const hasSeenOnboarding = localStorage.getItem('onboarding_completed');
 
@@ -556,13 +546,15 @@ function checkAndShowOnboarding() {
     const modal = document.getElementById('onboardingModal');
     if (modal) {
       modal.classList.add('active');
-      updateNavigation();
+      updateOnboardingNavigation();
     }
+    return true; // 온보딩 표시됨
   }
+  return false; // 온보딩 표시 안 됨
 }
 
 // 온보딩 닫기
-function closeOnboarding() {
+async function closeOnboarding() {
   const dontShowAgain = document.getElementById('dontShowAgain');
 
   if (dontShowAgain && dontShowAgain.checked) {
@@ -574,32 +566,44 @@ function closeOnboarding() {
     modal.classList.remove('active');
   }
 
-  // 3월 가이드 메시지 표시
-  setTimeout(() => {
+  // 온보딩 종료 후 게임 초기화
+  setTimeout(async () => {
+    // 1. 3월 가이드 메시지 표시
     show3MonthGuide();
-  }, 500); // 모달이 완전히 닫힌 후 표시
+
+    // 2. 스토리북 확인
+    await checkInitialStorybook();
+
+    // 3. 초기 메시지 요청
+    setTimeout(() => {
+      if (chatLog && chatLog.childElementCount === 0) {
+        console.log("초기 메시지 요청");
+        sendMessage(true);
+      }
+    }, 500);
+  }, 500); // 모달이 완전히 닫힌 후 처리
 }
 
 // 다음 페이지
 function nextPage() {
-  if (currentPage < totalPages) {
-    goToPage(currentPage + 1);
+  if (AppState.onboarding.currentPage < AppState.onboarding.totalPages) {
+    goToPage(AppState.onboarding.currentPage + 1);
   }
 }
 
 // 이전 페이지
 function previousPage() {
-  if (currentPage > 1) {
-    goToPage(currentPage - 1);
+  if (AppState.onboarding.currentPage > 1) {
+    goToPage(AppState.onboarding.currentPage - 1);
   }
 }
 
 // 특정 페이지로 이동
 function goToPage(pageNumber) {
-  if (pageNumber < 1 || pageNumber > totalPages) return;
+  if (pageNumber < 1 || pageNumber > AppState.onboarding.totalPages) return;
 
   // 현재 페이지 비활성화
-  const currentPageElem = document.querySelector(`.storybook-page[data-page="${currentPage}"]`);
+  const currentPageElem = document.querySelector(`.storybook-page[data-page="${AppState.onboarding.currentPage}"]`);
   if (currentPageElem) {
     currentPageElem.classList.remove('active');
   }
@@ -611,29 +615,29 @@ function goToPage(pageNumber) {
   }
 
   // 현재 페이지 번호 업데이트
-  currentPage = pageNumber;
+  AppState.onboarding.currentPage = pageNumber;
 
   // 네비게이션 업데이트
-  updateNavigation();
+  updateOnboardingNavigation();
 }
 
 // 네비게이션 업데이트 (버튼 활성화/비활성화, 닷 표시)
-function updateNavigation() {
+function updateOnboardingNavigation() {
   // 이전/다음 버튼
   const prevBtn = document.querySelector('.storybook-prev');
   const nextBtn = document.querySelector('.storybook-next');
 
   if (prevBtn) {
-    prevBtn.disabled = (currentPage === 1);
+    prevBtn.disabled = (AppState.onboarding.currentPage === 1);
   }
 
   if (nextBtn) {
-    nextBtn.disabled = (currentPage === totalPages);
+    nextBtn.disabled = (AppState.onboarding.currentPage === AppState.onboarding.totalPages);
   }
 
   // 닷 네비게이션
   document.querySelectorAll('.storybook-dots .dot').forEach((dot, index) => {
-    if (index + 1 === currentPage) {
+    if (index + 1 === AppState.onboarding.currentPage) {
       dot.classList.add('active');
     } else {
       dot.classList.remove('active');
@@ -654,40 +658,36 @@ function show3MonthGuide() {
     return; // 이미 봤으면 표시하지 않음
   }
 
-  try {
-    // 3월 가이드 메시지 구성
-    const guideMsgElement = document.createElement('div');
-    guideMsgElement.className = 'guide-message march-guide';
-    guideMsgElement.innerHTML = `
-      <div class="guide-header">
-        <h2>3월 - 시즌 준비</h2>
+  // 3월 가이드 메시지 구성
+  const guideMsgElement = document.createElement('div');
+  guideMsgElement.className = 'guide-message march-guide';
+  guideMsgElement.innerHTML = `
+    <div class="guide-header">
+      <h2>3월 - 시즌 준비</h2>
+    </div>
+    <div class="guide-content">
+      <p>드래프트까지 7개월! 민석이와 친밀도를 쌓고 기초 체력을 다지세요.</p>
+      <div class="guide-goals">
+        <h3>목표:</h3>
+        <ul>
+          <li>친밀도 20 이상</li>
+          <li>체력 60 이상</li>
+        </ul>
       </div>
-      <div class="guide-content">
-        <p>드래프트까지 7개월! 민석이와 친밀도를 쌓고 기초 체력을 다지세요.</p>
-        <div class="guide-goals">
-          <h3>목표:</h3>
-          <ul>
-            <li>친밀도 20 이상</li>
-            <li>체력 60 이상</li>
-          </ul>
-        </div>
-      </div>
-      <div class="guide-footer">
-        <button onclick="closeMarchGuide()" class="guide-close-btn">시작하기</button>
-      </div>
-    `;
+    </div>
+    <div class="guide-footer">
+      <button onclick="closeMarchGuide()" class="guide-close-btn">시작하기</button>
+    </div>
+  `;
 
-    // 채팅 로그에 추가
-    if (chatLog) {
-      chatLog.appendChild(guideMsgElement);
-      chatLog.scrollTop = chatLog.scrollHeight;
-    }
-
-    // localStorage에 표시 기록
-    localStorage.setItem('march_guide_shown', 'true');
-  } catch (err) {
-    console.error("3월 가이드 표시 실패:", err);
+  // 채팅 로그에 추가
+  if (chatLog) {
+    chatLog.appendChild(guideMsgElement);
+    chatLog.scrollTop = chatLog.scrollHeight;
   }
+
+  // localStorage에 표시 기록
+  localStorage.setItem('march_guide_shown', 'true');
 }
 
 // 3월 가이드 닫기
@@ -699,28 +699,367 @@ function closeMarchGuide() {
 }
 
 // ============================================================================
+// 스토리북 기능 (간소화 버전)
+// ============================================================================
+
+/**
+ * 스토리북 로드 및 표시
+ * @param {string} storybookId - 스토리북 ID
+ */
+async function loadAndShowStorybook(storybookId) {
+  try {
+    console.log('[스토리북] 로딩 시작:', storybookId);
+    const response = await fetch(`/api/storybook/${storybookId}?username=${username}`);
+    const data = await response.json();
+
+    console.log('[스토리북] API 응답:', data);
+
+    if (data.success) {
+      AppState.storybook.current = data.storybook;
+      AppState.storybook.currentPage = 0;
+      AppState.storybook.isActive = true;
+
+      console.log('[스토리북] 데이터 저장 완료:', {
+        title: AppState.storybook.current.title,
+        pages: AppState.storybook.current.pages.length
+      });
+
+      showStorybookModal();
+      renderStorybookPage(0);
+
+      console.log('[스토리북] 로드 완료:', AppState.storybook.current.title);
+    } else {
+      showError('스토리북을 불러올 수 없습니다.');
+      console.error('[스토리북] 로드 실패:', data.error);
+    }
+  } catch (error) {
+    showError('네트워크 오류가 발생했습니다. 다시 시도해주세요.', error);
+    console.error('[스토리북] 로드 예외:', error);
+  }
+}
+
+/**
+ * 스토리북 모달 표시
+ */
+function showStorybookModal() {
+  const modal = document.getElementById('storybook-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    document.getElementById('storybook-title').textContent = AppState.storybook.current?.title || '';
+  }
+}
+
+/**
+ * 스토리북 모달 숨기기
+ */
+function hideStorybookModal() {
+  const modal = document.getElementById('storybook-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    AppState.storybook.isActive = false;
+  }
+}
+
+/**
+ * 스토리북 페이지 렌더링 (간소화 버전)
+ * @param {number} pageIndex - 페이지 인덱스 (0부터 시작)
+ */
+function renderStorybookPage(pageIndex) {
+  if (!AppState.storybook.current || !AppState.storybook.current.pages) {
+    console.error('[스토리북] 스토리북 데이터 없음');
+    return;
+  }
+
+  const page = AppState.storybook.current.pages[pageIndex];
+  if (!page) {
+    console.error('[스토리북] 페이지 데이터 없음:', pageIndex);
+    return;
+  }
+
+  console.log('[스토리북] 페이지 렌더링:', {
+    pageIndex,
+    text: page.text,
+    image: page.image
+  });
+
+  // 이미지 렌더링
+  const imageContainer = document.getElementById('storybook-image-container');
+  if (imageContainer) {
+    if (page.image) {
+      imageContainer.innerHTML = `<img src="${page.image}" alt="스토리 이미지" onerror="this.innerHTML='<p class=\\'no-image-text\\'>이미지 로드 실패</p>'">`;
+    } else {
+      imageContainer.innerHTML = '<p class="no-image-text">이미지 없음</p>';
+    }
+  }
+
+  // 텍스트 렌더링
+  const textElem = document.getElementById('storybook-text');
+  if (textElem) {
+    textElem.textContent = page.text || '내용 없음';
+  }
+
+  console.log('[스토리북] 렌더링 완료');
+
+  // 네비게이션 업데이트
+  updateStorybookNavigation();
+}
+
+// 기존 복잡한 목표/스탯 변화 렌더링 함수 제거 (간소화된 버전에서는 불필요)
+
+/**
+ * 스토리북 네비게이션 업데이트 (간소화 버전)
+ */
+function updateStorybookNavigation() {
+  const prevBtn = document.getElementById('storybook-prev');
+  const nextBtn = document.getElementById('storybook-next');
+  const startBtn = document.getElementById('storybook-start');
+
+  if (!AppState.storybook.current) return;
+
+  const totalPages = AppState.storybook.current.pages.length;
+  const isFirstPage = AppState.storybook.currentPage === 0;
+  const isLastPage = AppState.storybook.currentPage === totalPages - 1;
+
+  // 이전 버튼 (첫 페이지에서는 비활성화)
+  if (prevBtn) {
+    prevBtn.disabled = isFirstPage;
+    prevBtn.style.opacity = isFirstPage ? '0.5' : '1';
+  }
+
+  // 마지막 페이지일 때
+  if (isLastPage) {
+    // "다음" 버튼 숨기기
+    if (nextBtn) nextBtn.style.display = 'none';
+
+    // "대화 시작하기" 버튼 표시
+    if (startBtn) startBtn.style.display = 'inline-block';
+  } else {
+    // 중간 페이지일 때
+    if (nextBtn) nextBtn.style.display = 'inline-block';
+    if (startBtn) startBtn.style.display = 'none';
+  }
+}
+
+/**
+ * 이전 페이지로 이동
+ */
+function storybookPrev() {
+  if (AppState.storybook.currentPage > 0) {
+    AppState.storybook.currentPage--;
+    renderStorybookPage(AppState.storybook.currentPage);
+    console.log('[스토리북] 이전 페이지:', AppState.storybook.currentPage);
+  }
+}
+
+/**
+ * 다음 페이지로 이동
+ */
+function storybookNext() {
+  if (AppState.storybook.current && AppState.storybook.currentPage < AppState.storybook.current.pages.length - 1) {
+    AppState.storybook.currentPage++;
+    renderStorybookPage(AppState.storybook.currentPage);
+    console.log('[스토리북] 다음 페이지:', AppState.storybook.currentPage);
+  }
+}
+
+/**
+ * 대화 시작하기 버튼 (스토리북 완료)
+ */
+async function storybookStart() {
+  console.log('[스토리북] 대화 시작하기 버튼 클릭');
+  await completeStorybook();
+}
+
+/**
+ * 스토리북 완료
+ */
+async function completeStorybook() {
+  try {
+    const response = await fetch('/api/storybook/complete', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        username: username,
+        storybook_id: AppState.storybook.current.id
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log('[스토리북] 완료:', data);
+
+      // 다음 액션에 따라 분기
+      if (data.next_action === 'start_chat_mode') {
+        // 채팅 모드로 전환
+        await transitionToChatMode();
+
+      } else if (data.next_action === 'show_next_storybook') {
+        // 다음 스토리북 표시
+        await transitionToStorybookMode(data.next_storybook_id);
+
+      } else if (data.next_action === 'game_end') {
+        // 게임 종료 (엔딩 표시)
+        hideStorybookModal();
+
+        if (data.ending) {
+          // 엔딩 스토리북 표시
+          AppState.storybook.current = {
+            id: '9_ending',
+            title: data.ending.title,
+            pages: data.ending.pages
+          };
+          AppState.storybook.currentPage = 0;
+          showStorybookModal();
+          renderStorybookPage(0);
+        } else {
+          alert('게임이 종료되었습니다. 플레이해주셔서 감사합니다!');
+        }
+      }
+    } else {
+      showError('오류가 발생했습니다.');
+      console.error('[스토리북] 완료 실패:', data.error);
+    }
+  } catch (error) {
+    showError('네트워크 오류가 발생했습니다. 다시 시도해주세요.', error);
+  }
+}
+
+/**
+ * 채팅 모드로 부드럽게 전환
+ */
+async function transitionToChatMode() {
+  const layer = document.getElementById('transition-layer');
+
+  // 페이드 아웃
+  layer.classList.add('active');
+  await delay(500);
+
+  // 모달 숨기기
+  hideStorybookModal();
+
+  // 게임 상태 새로고침
+  await fetchGameState();
+
+  // 페이드 인
+  await delay(100);
+  layer.classList.remove('active');
+
+  console.log('[전환] 채팅 모드로 전환 완료');
+}
+
+/**
+ * 스토리북 모드로 부드럽게 전환
+ * @param {string} storybookId - 스토리북 ID
+ */
+async function transitionToStorybookMode(storybookId) {
+  const layer = document.getElementById('transition-layer');
+
+  // 페이드 아웃
+  layer.classList.add('active');
+  await delay(500);
+
+  // 스토리북 로드
+  await loadAndShowStorybook(storybookId);
+
+  // 페이드 인
+  await delay(100);
+  layer.classList.remove('active');
+
+  console.log('[전환] 스토리북 모드로 전환 완료');
+}
+
+/**
+ * 지연 함수 (Promise)
+ * @param {number} ms - 밀리초
+ */
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * 다음 달로 진행
+ */
+async function advanceToNextMonth() {
+  try {
+    const response = await fetch('/api/game/advance', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: username})
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log('[월 진행] 성공:', data);
+
+      // 전환 스토리북 표시
+      await transitionToStorybookMode(data.transition_storybook_id);
+    } else {
+      showError(data.error || '월 진행에 실패했습니다.');
+      console.error('[월 진행] 실패:', data.error);
+    }
+  } catch (error) {
+    showError('월 진행에 실패했습니다. 다시 시도해주세요.', error);
+  }
+}
+
+/**
+ * 게임 상태 가져오기
+ */
+async function fetchGameState() {
+  const response = await fetch(`/api/game/stats?username=${username}`);
+  const data = await response.json();
+
+  if (data.success) {
+    AppState.game = data;
+    updateStatsUI(data);
+    console.log('[게임 상태] 업데이트 완료');
+  }
+}
+
+/**
+ * 페이지 로드 시 현재 스토리북 확인
+ */
+async function checkInitialStorybook() {
+  const response = await fetch(`/api/storybook/current?username=${username}`);
+  const data = await response.json();
+
+  if (data.success) {
+    if (data.phase === 'storybook' && data.storybook) {
+      // 스토리북 모드: 스토리북 표시
+      console.log('[초기화] 스토리북 모드');
+      await loadAndShowStorybook(data.storybook.id);
+    } else {
+      // 채팅 모드
+      console.log('[초기화] 채팅 모드');
+    }
+  }
+}
+
+// ============================================================================
 // 페이지 로드
 // ============================================================================
 
-// 페이지 로드 시 초기 메시지 요청
-window.addEventListener("load", () => {
+// 페이지 로드 시 초기화
+window.addEventListener("load", async () => {
   console.log("페이지 로드 완료");
 
-  // 온보딩 체크 및 표시
-  checkAndShowOnboarding();
+  // 1. 온보딩 체크 및 표시 (최우선)
+  const onboardingShown = checkAndShowOnboarding();
 
-  setTimeout(() => {
-    if (chatLog && chatLog.childElementCount === 0) {
-      console.log("초기 메시지 요청");
-      sendMessage(true);
+  // 2. 온보딩을 표시하지 않은 경우에만 스토리북/채팅 초기화
+  if (!onboardingShown) {
+    // 초기 스토리북 확인
+    await checkInitialStorybook();
 
-      // 온보딩을 이미 본 경우 3월 가이드 표시
-      const hasSeenOnboarding = localStorage.getItem('onboarding_completed');
-      if (hasSeenOnboarding) {
-        setTimeout(() => {
-          show3MonthGuide();
-        }, 1000);
+    // 초기 메시지 요청
+    setTimeout(() => {
+      if (chatLog && chatLog.childElementCount === 0) {
+        console.log("초기 메시지 요청");
+        sendMessage(true);
       }
-    }
-  }, 500);
+    }, 500);
+  }
+  // 온보딩이 표시된 경우, closeOnboarding()에서 3월 가이드와 스토리북 체크를 처리
 });
