@@ -86,6 +86,14 @@ class GameState:
     # 훈련 스케줄 (추후 구현)
     training_schedule: Dict[str, str] = field(default_factory=dict)
 
+    # 스토리북 관련
+    current_phase: str = "storybook"  # "storybook" | "chat"
+    current_storybook_id: str = "3_opening"  # 현재 보고 있는 스토리북
+    storybook_completed: Dict[str, bool] = field(default_factory=dict)  # 완료한 스토리북 목록
+
+    # 이전 월 스탯 (전환 스토리북에서 변화량 표시용)
+    previous_month_stats: Dict[str, int] = field(default_factory=dict)
+
     def __post_init__(self):
         """초기화 후 기본값 설정"""
         # stats가 None이면 새로 생성
@@ -111,6 +119,10 @@ class GameState:
             'event_history': self.event_history,
             'special_moments': self.special_moments,
             'training_schedule': self.training_schedule,
+            'current_phase': self.current_phase,
+            'current_storybook_id': self.current_storybook_id,
+            'storybook_completed': self.storybook_completed,
+            'previous_month_stats': self.previous_month_stats,
         }
 
     @classmethod
@@ -124,6 +136,40 @@ class GameState:
     def get_months_until_draft(self) -> int:
         """드래프트까지 남은 개월 수"""
         return 9 - self.current_month
+
+    def mark_storybook_completed(self, storybook_id: str):
+        """스토리북 완료 표시"""
+        self.storybook_completed[storybook_id] = True
+
+    def set_chat_mode(self):
+        """채팅 모드로 전환"""
+        self.current_phase = "chat"
+        self.current_storybook_id = None
+
+    def set_storybook_mode(self, storybook_id: str):
+        """스토리북 모드로 전환"""
+        self.current_phase = "storybook"
+        self.current_storybook_id = storybook_id
+
+    def save_previous_month_stats(self):
+        """현재 스탯을 이전 월 스탯으로 저장 (월 진행 시 호출)"""
+        self.previous_month_stats = self.stats.to_dict()
+
+    def get_stat_changes_from_previous_month(self) -> Dict[str, int]:
+        """이전 월 대비 스탯 변화량 계산"""
+        if not self.previous_month_stats:
+            return {}
+
+        current_stats = self.stats.to_dict()
+        changes = {}
+
+        for key, current_value in current_stats.items():
+            previous_value = self.previous_month_stats.get(key, 0)
+            change = current_value - previous_value
+            if change != 0:
+                changes[key] = change
+
+        return changes
 
 
 class GameStateManager:

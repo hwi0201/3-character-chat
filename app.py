@@ -19,6 +19,7 @@ import json
 from pathlib import Path
 from flask import Flask, request, render_template, jsonify, url_for
 from dotenv import load_dotenv
+from services.storybook_manager import get_storybook_manager
 
 # 환경변수 로드
 load_dotenv()
@@ -200,7 +201,19 @@ def api_get_stats():
 
 @app.route('/api/game/advance', methods=['POST'])
 def api_advance_month():
-    """다음 달로 진행"""
+    """
+    다음 달로 진행 (스토리북 시스템 통합)
+
+    Request Body:
+        {"username": "사용자"}
+
+    Returns:
+        {
+            "success": True,
+            "transition_storybook_id": "3_to_4_transition",
+            "new_month": 4
+        }
+    """
     try:
         data = request.get_json()
         username = data.get('username', '사용자')
@@ -209,44 +222,58 @@ def api_advance_month():
         chatbot = get_chatbot_service()
         game_state = chatbot.game_manager.get_or_create(username)
 
-        # 9월 이후면 진행 불가
-        if game_state.current_month >= 9:
+        storybook_manager = get_storybook_manager()
+
+        # 목표 달성 확인 (디버깅 모드: 임시로 비활성화)
+        # all_achieved, goals_info = storybook_manager.check_goals_achieved(game_state)
+        # if not all_achieved and game_state.current_month < 9:
+        #     return jsonify({
+        #         'success': False,
+        #         'error': '목표를 달성하지 못했습니다',
+        #         'goals_info': goals_info
+        #     }), 400
+
+        # 이전 월 스탯 저장
+        old_month = game_state.current_month
+
+        # 다음 스토리북 ID 가져오기
+        next_storybook_id = storybook_manager.get_next_storybook_id(game_state)
+
+        if not next_storybook_id:
             return jsonify({
                 'success': False,
-                'message': '이미 9월입니다. 드래프트를 진행하세요!'
-            })
+                'error': '다음 단계를 결정할 수 없습니다'
+            }), 400
 
-        # 다음 달로 진행
-        success = chatbot.game_manager.advance_month(username)
+        # 스토리북 모드로 전환
+        game_state.set_storybook_mode(next_storybook_id)
 
-        if success:
-            # 이벤트 체크
-            conversation_history = chatbot.get_session_history(username).messages
-            event_info = chatbot.event_detector.check_event(
-                game_state=game_state,
-                conversation_history=conversation_history,
-                recent_messages=10
-            )
-
-            # 월별 가이드 가져오기
-            guide = MONTH_GUIDES.get(game_state.current_month, None)
-
-            return jsonify({
-                'success': True,
-                'new_month': game_state.current_month,
-                'event': event_info,
-                'guide': guide,
-                'message': f'{game_state.current_month}월이 시작되었습니다!'
-            })
+        # 9월이 아니면 월 증가
+        if game_state.current_month < 9:
+            game_state.current_month += 1
+            new_month = game_state.current_month
         else:
-            return jsonify({
-                'success': False,
-                'message': '월 진행에 실패했습니다.'
-            })
+            new_month = 9
+
+        # 게임 상태 저장
+        chatbot.game_manager.save(username)
+
+        return jsonify({
+            'success': True,
+            'transition_storybook_id': next_storybook_id,
+            'old_month': old_month,
+            'new_month': new_month,
+            'message': f'{old_month}월을 마무리하고 {new_month}월로 넘어갑니다'
+        })
 
     except Exception as e:
         print(f"[ERROR] 월 진행 실패: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': '서버 오류가 발생했습니다.'
+        }), 500
 
 
 @app.route('/api/game/hints', methods=['GET'])
@@ -360,6 +387,247 @@ def api_get_moments():
     except Exception as e:
         print(f"[ERROR] 특별한 순간 조회 실패: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================================
+# 스토리북 관련 API 엔드포인트
+# ============================================================================
+
+@app.route('/api/storybook/<storybook_id>', methods=['GET'])
+def api_get_storybook(storybook_id: str):
+    """
+    특정 스토리북 데이터 반환
+
+    Query Params:
+        - username: 사용자 이름 (게임 상태 확인용)
+
+    Returns:
+        {
+            "success": True,
+            "storybook": {...},
+            "current_stats": {...}
+        }
+    """
+    try:
+        username = request.args.get('username', '사용자')
+
+        # 스토리북 관리자 가져오기
+        storybook_manager = get_storybook_manager()
+
+        # 스토리북 가져오기
+        storybook = storybook_manager.get_storybook(storybook_id)
+
+        # 현재 게임 상태 가져오기 (스탯 표시용)
+        from services import get_chatbot_service
+        chatbot = get_chatbot_service()
+        game_state = chatbot.game_manager.get_or_create(username)
+
+        return jsonify({
+            'success': True,
+            'storybook': storybook,
+            'current_stats': game_state.stats.to_dict(),
+            'current_month': game_state.current_month
+        })
+    except ValueError as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 404
+    except Exception as e:
+        print(f"[ERROR] 스토리북 조회 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': '서버 오류가 발생했습니다.'
+        }), 500
+
+
+@app.route('/api/storybook/current', methods=['GET'])
+def api_get_current_storybook():
+    """
+    현재 게임 상태에 맞는 스토리북 반환
+
+    Query Params:
+        - username: 사용자 이름
+
+    Returns:
+        {
+            "success": True,
+            "storybook": {...} or None,
+            "phase": "storybook" | "chat"
+        }
+    """
+    try:
+        username = request.args.get('username', '사용자')
+
+        from services import get_chatbot_service
+        chatbot = get_chatbot_service()
+        game_state = chatbot.game_manager.get_or_create(username)
+
+        storybook_manager = get_storybook_manager()
+        current_storybook = storybook_manager.get_current_storybook(game_state)
+
+        return jsonify({
+            'success': True,
+            'storybook': current_storybook,
+            'phase': game_state.current_phase,
+            'current_month': game_state.current_month
+        })
+    except Exception as e:
+        print(f"[ERROR] 현재 스토리북 조회 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': '서버 오류가 발생했습니다.'
+        }), 500
+
+
+@app.route('/api/game/check-goals', methods=['GET'])
+def api_check_goals():
+    """
+    월별 목표 달성 여부 확인
+
+    Query Params:
+        - username: 사용자 이름
+
+    Returns:
+        {
+            "success": True,
+            "goals_achieved": True/False,
+            "goals_info": {...},
+            "can_advance": True/False
+        }
+    """
+    try:
+        username = request.args.get('username', '사용자')
+
+        from services import get_chatbot_service
+        chatbot = get_chatbot_service()
+        game_state = chatbot.game_manager.get_or_create(username)
+
+        storybook_manager = get_storybook_manager()
+
+        # 9월이면 항상 진행 가능 (엔딩으로)
+        if game_state.current_month >= 9:
+            return jsonify({
+                'success': True,
+                'goals_achieved': True,
+                'can_advance': True,
+                'message': '드래프트로 진행합니다'
+            })
+
+        # 목표 달성 확인
+        all_achieved, goals_info = storybook_manager.check_goals_achieved(game_state)
+
+        return jsonify({
+            'success': True,
+            'goals_achieved': all_achieved,
+            'goals_info': goals_info,
+            'can_advance': all_achieved,
+            'current_stats': game_state.stats.to_dict(),
+            'current_month': game_state.current_month
+        })
+    except Exception as e:
+        print(f"[ERROR] 목표 확인 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': '서버 오류가 발생했습니다.'
+        }), 500
+
+
+@app.route('/api/storybook/complete', methods=['POST'])
+def api_complete_storybook():
+    """
+    스토리북 완료 및 다음 단계로 전환
+
+    Request Body:
+        {
+            "username": "사용자",
+            "storybook_id": "3_opening"
+        }
+
+    Returns:
+        {
+            "success": True,
+            "next_action": "start_chat_mode" | "show_next_storybook" | "game_end",
+            "next_storybook_id": "4_opening" (if applicable)
+        }
+    """
+    try:
+        data = request.get_json()
+        username = data.get('username', '사용자')
+        storybook_id = data.get('storybook_id')
+
+        from services import get_chatbot_service
+        chatbot = get_chatbot_service()
+        game_state = chatbot.game_manager.get_or_create(username)
+
+        storybook_manager = get_storybook_manager()
+
+        # 스토리북 완료 표시
+        game_state.mark_storybook_completed(storybook_id)
+
+        # 스토리북 정보 가져오기
+        storybook = storybook_manager.get_storybook(storybook_id)
+        completion_action = storybook.get('completion_action', {})
+
+        # completion_action이 문자열인지 딕셔너리인지 확인 (하위 호환성)
+        if isinstance(completion_action, str):
+            # 문자열인 경우: storybook_config.json의 간단한 형식
+            action_type = completion_action
+            action_message = ''
+            next_storybook_id = storybook.get('next_storybook_id')
+        else:
+            # 딕셔너리인 경우: 확장된 형식
+            action_type = completion_action.get('type', 'start_chat_mode')
+            action_message = completion_action.get('message', '')
+            next_storybook_id = completion_action.get('next_storybook_id')
+
+        response_data = {
+            'success': True,
+            'next_action': action_type,
+            'message': action_message
+        }
+
+        # 액션 타입에 따라 처리
+        if action_type == 'start_chat_mode':
+            # 채팅 모드로 전환
+            game_state.set_chat_mode()
+            response_data['message'] = '대화를 시작하세요'
+
+        elif action_type == 'show_next_storybook':
+            # 다음 스토리북 표시
+            if next_storybook_id:
+                game_state.set_storybook_mode(next_storybook_id)
+                response_data['next_storybook_id'] = next_storybook_id
+
+        elif action_type == 'determine_ending':
+            # 엔딩 결정
+            ending = storybook_manager.determine_ending(game_state)
+            response_data['ending'] = ending
+            response_data['next_action'] = 'game_end'
+
+        elif action_type == 'game_end':
+            # 게임 종료
+            response_data['message'] = '게임이 종료되었습니다'
+
+        # 게임 상태 저장
+        chatbot.game_manager.save(username)
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        print(f"[ERROR] 스토리북 완료 처리 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': '서버 오류가 발생했습니다.'
+        }), 500
 
 
 # 헬스체크 엔드포인트 (Vercel용)
