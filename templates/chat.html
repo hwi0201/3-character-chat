@@ -100,6 +100,64 @@
         color: #333;
         margin-right: 20%;
       }
+      .message.guide {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border: 2px dashed #2196f3;
+        color: #1565c0;
+        margin: 20px 5%;
+        padding: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.2);
+      }
+      .guide-icon {
+        font-size: 2.5rem;
+        flex-shrink: 0;
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+      }
+      .guide-content {
+        flex: 1;
+      }
+      .guide-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #0d47a1;
+      }
+      .guide-message {
+        font-size: 1rem;
+        font-style: italic;
+        margin-bottom: 15px;
+        line-height: 1.6;
+      }
+      .guide-goals {
+        background: rgba(255, 255, 255, 0.7);
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 0.95rem;
+      }
+      .guide-goals strong {
+        color: #1976d2;
+        display: block;
+        margin-bottom: 8px;
+      }
+      .guide-goals ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+      .guide-goals li {
+        margin: 5px 0;
+        color: #424242;
+      }
       .bot-big-img {
         display: block;
         width: 100%;
@@ -280,85 +338,152 @@
         margin: 5px 0;
       }
 
-      /* 알림 스타일 */
-      .event-notification,
-      .hint-notification {
+      /* 알림 컨테이너 (스탯 패널 아래) */
+      .notifications-container {
         position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-        z-index: 1001;
-        min-width: 300px;
-        max-width: 500px;
-        animation: slideIn 0.3s;
-      }
-      .event-notification h3 {
-        margin: 0 0 15px 0;
-        color: #764ba2;
-      }
-      .event-notification p,
-      .hint-notification p {
-        margin: 0 0 20px 0;
-        line-height: 1.6;
-      }
-      .event-notification button,
-      .hint-notification button {
-        padding: 10px 20px;
-        background: #764ba2;
-        color: white;
-        border: none;
-        border-radius: 25px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: transform 0.2s;
-      }
-      .event-notification button:hover,
-      .hint-notification button:hover {
-        transform: translateY(-2px);
-      }
-      .hint-notification {
-        background: #fffacd;
-        border: 2px solid #ffd700;
-      }
-      .hint-notification button {
-        background: #ffd700;
-        color: #333;
+        right: 20px;
+        top: 550px;
+        width: 280px;
+        max-height: calc(100vh - 570px);
+        overflow-y: auto;
+        z-index: 100;
       }
 
-      /* 하단 버튼 그룹 스타일 */
+      /* 개별 알림 스타일 */
+      .notification-item {
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        animation: slideInRight 0.3s;
+      }
+
+      @keyframes slideInRight {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      .notification-header {
+        padding: 12px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
+      }
+
+      .notification-header:hover {
+        background: #f5f5f5;
+      }
+
+      .notification-item.event .notification-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .notification-item.hint .notification-header {
+        background: #fffacd;
+        border-left: 4px solid #ffd700;
+      }
+
+      .notification-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .notification-close {
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      .notification-close:hover {
+        opacity: 1;
+      }
+
+      .notification-body {
+        padding: 12px;
+        display: none;
+        border-top: 1px solid #e0e0e0;
+        line-height: 1.6;
+        font-size: 0.9rem;
+      }
+
+      .notification-item.expanded .notification-body {
+        display: block;
+      }
+
+      .notification-badge {
+        background: rgba(255, 255, 255, 0.3);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+      }
+
+      /* 왼쪽 버튼 그룹 스타일 (세로 배치) */
       .bottom-actions {
         position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
         display: flex;
+        flex-direction: column;
         gap: 10px;
         z-index: 99;
       }
       .action-btn {
-        padding: 12px 20px;
+        padding: 8px;
         background: white;
         border: 2px solid #764ba2;
-        border-radius: 25px;
+        border-radius: 12px;
         cursor: pointer;
-        font-size: 0.9rem;
+        font-size: 1.5rem;
         font-weight: 600;
         color: #764ba2;
         transition: all 0.3s;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        width: 80px;
+        height: 70px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        line-height: 1.2;
       }
       .action-btn:hover {
         background: #764ba2;
         color: white;
-        transform: translateY(-2px);
+        transform: translateX(5px);
         box-shadow: 0 4px 12px rgba(118, 75, 162, 0.3);
       }
       .action-btn:active {
-        transform: translateY(0);
+        transform: translateX(0);
+      }
+      .action-btn-label {
+        font-size: 0.7rem;
+        margin-top: 2px;
       }
 
       /* 상세 모달 스타일 */
@@ -465,6 +590,415 @@
         font-size: 3rem;
         margin-bottom: 10px;
       }
+
+      /* ============================================================================ */
+      /* 온보딩 스토리북 스타일 */
+      /* ============================================================================ */
+      .onboarding-modal {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(10px);
+      }
+
+      .onboarding-modal.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .storybook-container {
+        position: relative;
+        width: 90%;
+        max-width: 700px;
+        height: 80vh;
+        max-height: 600px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        padding: 40px;
+        overflow: hidden;
+        animation: bookOpen 0.6s ease-out;
+      }
+
+      @keyframes bookOpen {
+        from {
+          transform: scale(0.8) rotateY(-15deg);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1) rotateY(0);
+          opacity: 1;
+        }
+      }
+
+      .storybook-close {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        font-size: 2rem;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .storybook-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: rotate(90deg);
+      }
+
+      .storybook-page {
+        display: none;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
+
+      .storybook-page.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 1;
+        animation: fadeInPage 0.5s ease;
+      }
+
+      @keyframes fadeInPage {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .storybook-content {
+        text-align: center;
+        color: white;
+        width: 100%;
+      }
+
+      .storybook-emoji {
+        font-size: 5rem;
+        margin-bottom: 20px;
+        animation: bounceEmoji 2s infinite;
+      }
+
+      @keyframes bounceEmoji {
+        0%, 100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      .storybook-title {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+        line-height: 1.3;
+      }
+
+      .storybook-page h2.storybook-title {
+        font-size: 1.8rem;
+      }
+
+      .storybook-text {
+        font-size: 1.2rem;
+        line-height: 1.8;
+        margin-bottom: 30px;
+        opacity: 0.95;
+      }
+
+      /* 야구장 일러스트레이션 */
+      .baseball-field {
+        width: 200px;
+        height: 200px;
+        margin: 30px auto;
+        background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+        border-radius: 50%;
+        position: relative;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      }
+
+      .baseball-field::before {
+        content: "⚾";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 3rem;
+        animation: spin 3s linear infinite;
+      }
+
+      @keyframes spin {
+        from { transform: translate(-50%, -50%) rotate(0deg); }
+        to { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+
+      /* 타임라인 */
+      .goal-timeline {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 40px;
+      }
+
+      .timeline-item {
+        text-align: center;
+      }
+
+      .timeline-month {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 15px 20px;
+        border-radius: 10px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 8px;
+        transition: all 0.3s;
+      }
+
+      .timeline-item.highlight .timeline-month {
+        background: #FFD700;
+        color: #764ba2;
+        transform: scale(1.1);
+        box-shadow: 0 5px 20px rgba(255, 215, 0, 0.5);
+      }
+
+      .timeline-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      .timeline-arrow {
+        font-size: 2rem;
+        opacity: 0.6;
+      }
+
+      /* 스탯 쇼케이스 */
+      .stats-showcase {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 40px;
+        flex-wrap: wrap;
+      }
+
+      .stat-showcase-item {
+        text-align: center;
+      }
+
+      .stat-icon {
+        font-size: 3rem;
+        margin-bottom: 10px;
+        animation: pulseIcon 2s infinite;
+      }
+
+      @keyframes pulseIcon {
+        0%, 100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+      }
+
+      .stat-name {
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      /* 이벤트 예시 */
+      .event-examples {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 40px;
+        flex-wrap: wrap;
+      }
+
+      .event-card-small {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 20px;
+        border-radius: 15px;
+        min-width: 120px;
+        transition: all 0.3s;
+        cursor: pointer;
+      }
+
+      .event-card-small:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-5px);
+      }
+
+      .event-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+      }
+
+      .event-name {
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      /* 시작 버튼 */
+      .storybook-start-btn {
+        background: white;
+        color: #764ba2;
+        border: none;
+        padding: 18px 50px;
+        font-size: 1.3rem;
+        font-weight: bold;
+        border-radius: 50px;
+        cursor: pointer;
+        margin-top: 30px;
+        transition: all 0.3s;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .storybook-start-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      }
+
+      .skip-option {
+        margin-top: 20px;
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+
+      .skip-option label {
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .skip-option input[type="checkbox"] {
+        cursor: pointer;
+        width: 16px;
+        height: 16px;
+      }
+
+      /* 네비게이션 */
+      .storybook-navigation {
+        position: absolute;
+        bottom: 30px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 40px;
+      }
+
+      .storybook-prev,
+      .storybook-next {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: all 0.3s;
+      }
+
+      .storybook-prev:hover,
+      .storybook-next:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .storybook-prev:disabled,
+      .storybook-next:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      .storybook-dots {
+        display: flex;
+        gap: 12px;
+      }
+
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .dot.active {
+        background: white;
+        transform: scale(1.3);
+      }
+
+      .dot:hover {
+        background: rgba(255, 255, 255, 0.6);
+      }
+
+      /* 반응형 */
+      @media (max-width: 768px) {
+        .storybook-container {
+          width: 95%;
+          padding: 30px 20px;
+        }
+
+        .storybook-title {
+          font-size: 1.8rem;
+        }
+
+        .storybook-page h2.storybook-title {
+          font-size: 1.5rem;
+        }
+
+        .storybook-text {
+          font-size: 1rem;
+        }
+
+        .storybook-emoji {
+          font-size: 3.5rem;
+        }
+
+        .stats-showcase {
+          gap: 15px;
+        }
+
+        .stat-icon {
+          font-size: 2rem;
+        }
+
+        .event-card-small {
+          min-width: 100px;
+          padding: 15px;
+        }
+
+        .storybook-navigation {
+          padding: 0 20px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -540,6 +1074,11 @@
       </div>
     </div>
 
+    <!-- 알림 컨테이너 (스탯 패널 아래) -->
+    <div class="notifications-container" id="notifications-container">
+      <!-- 알림이 여기에 추가됩니다 -->
+    </div>
+
     <div class="chat-area" data-username="{{ username }}">
       <div id="chat-log"></div>
 
@@ -553,61 +1092,20 @@
       </div>
     </div>
 
-    <!-- 하단 버튼 그룹 -->
+    <!-- 왼쪽 버튼 그룹 (세로 배치) -->
     <div class="bottom-actions">
-      <button class="action-btn" id="btn-stats">📊 스탯 상세</button>
-      <button class="action-btn" id="btn-advance">📅 다음 달</button>
-      <button class="action-btn" id="btn-hints">💡 추천 응답</button>
-      <button class="action-btn" id="btn-moments">🎴 특별한 순간</button>
-    </div>
-
-    <!-- 스탯 상세 모달 -->
-    <div id="statsModal" class="detail-modal">
-      <div class="detail-modal-content">
-        <button class="detail-modal-close" onclick="closeDetailModal('statsModal')">
-          &times;
-        </button>
-        <h2>📊 민석이 스탯 상세</h2>
-
-        <div class="stats-detail-grid">
-          <div class="stat-card">
-            <div class="stat-card-label">💖 친밀도</div>
-            <div class="stat-card-value" id="detail-intimacy">0</div>
-            <div class="stat-card-label" id="detail-intimacy-level">매우 낮음</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-label">🧠 멘탈</div>
-            <div class="stat-card-value" id="detail-mental">50</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-label">💪 체력</div>
-            <div class="stat-card-value" id="detail-stamina">50</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-label">💥 힘</div>
-            <div class="stat-card-value" id="detail-power">30</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-label">🏃 주루</div>
-            <div class="stat-card-value" id="detail-speed">40</div>
-          </div>
-        </div>
-
-        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0">
-          <p style="margin: 10px 0; color: #666">
-            <strong>📅 현재:</strong> <span id="detail-month">3월</span>
-          </p>
-          <p style="margin: 10px 0; color: #666">
-            <strong>🎯 드래프트까지:</strong> <span id="detail-months-left">6개월</span>
-          </p>
-          <p style="margin: 10px 0; color: #666">
-            <strong>📜 이벤트 히스토리:</strong>
-          </p>
-          <ul id="detail-events" style="margin: 5px 0; padding-left: 20px; color: #666">
-            <li>아직 이벤트가 없습니다</li>
-          </ul>
-        </div>
-      </div>
+      <button class="action-btn" id="btn-advance" title="다음 달">
+        📅
+        <div class="action-btn-label">다음달</div>
+      </button>
+      <button class="action-btn" id="btn-hints" title="추천 응답">
+        💡
+        <div class="action-btn-label">추천</div>
+      </button>
+      <button class="action-btn" id="btn-moments" title="특별한 순간">
+        🎴
+        <div class="action-btn-label">순간</div>
+      </button>
     </div>
 
     <!-- 추천 응답 모달 -->
@@ -642,6 +1140,149 @@
             <p>아직 특별한 순간이 없습니다</p>
             <p style="font-size: 0.9rem">민석이와 대화하며 추억을 만들어보세요!</p>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 온보딩 스토리북 팝업 -->
+    <div id="onboardingModal" class="onboarding-modal">
+      <div class="storybook-container">
+        <button class="storybook-close" onclick="closeOnboarding()">&times;</button>
+
+        <!-- Page 1: 환영 페이지 -->
+        <div class="storybook-page active" data-page="1">
+          <div class="storybook-content">
+            <div class="storybook-emoji">⚾</div>
+            <h1 class="storybook-title">강민석과 함께하는<br>드래프트 도전기</h1>
+            <p class="storybook-text">
+              당신은 강민석의 멘토가 되어<br>
+              그의 꿈을 이루도록 도와주세요!
+            </p>
+            <div class="storybook-illustration">
+              <div class="baseball-field"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Page 2: 게임 목표 -->
+        <div class="storybook-page" data-page="2">
+          <div class="storybook-content">
+            <div class="storybook-emoji">🎯</div>
+            <h2 class="storybook-title">게임 목표</h2>
+            <p class="storybook-text">
+              <strong>3월부터 9월까지</strong><br>
+              민석이를 성장시켜 드래프트 성공!
+            </p>
+            <div class="goal-timeline">
+              <div class="timeline-item">
+                <div class="timeline-month">3월</div>
+                <div class="timeline-label">시작</div>
+              </div>
+              <div class="timeline-arrow">→</div>
+              <div class="timeline-item">
+                <div class="timeline-month">6월</div>
+                <div class="timeline-label">중반</div>
+              </div>
+              <div class="timeline-arrow">→</div>
+              <div class="timeline-item highlight">
+                <div class="timeline-month">9월</div>
+                <div class="timeline-label">드래프트!</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Page 3: 스탯 시스템 -->
+        <div class="storybook-page" data-page="3">
+          <div class="storybook-content">
+            <div class="storybook-emoji">📊</div>
+            <h2 class="storybook-title">스탯 시스템</h2>
+            <p class="storybook-text">
+              대화를 통해 민석이의 능력을 키우세요
+            </p>
+            <div class="stats-showcase">
+              <div class="stat-showcase-item">
+                <div class="stat-icon">💖</div>
+                <div class="stat-name">친밀도</div>
+              </div>
+              <div class="stat-showcase-item">
+                <div class="stat-icon">🧠</div>
+                <div class="stat-name">멘탈</div>
+              </div>
+              <div class="stat-showcase-item">
+                <div class="stat-icon">💪</div>
+                <div class="stat-name">체력</div>
+              </div>
+              <div class="stat-showcase-item">
+                <div class="stat-icon">💥</div>
+                <div class="stat-name">힘</div>
+              </div>
+              <div class="stat-showcase-item">
+                <div class="stat-icon">🏃</div>
+                <div class="stat-name">주루</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Page 4: 이벤트 시스템 -->
+        <div class="storybook-page" data-page="4">
+          <div class="storybook-content">
+            <div class="storybook-emoji">🎭</div>
+            <h2 class="storybook-title">특별한 순간들</h2>
+            <p class="storybook-text">
+              민석이와의 대화 중 특별한 이벤트가<br>
+              발생할 수 있습니다
+            </p>
+            <div class="event-examples">
+              <div class="event-card-small">
+                <div class="event-icon">🏆</div>
+                <div class="event-name">첫 홈런</div>
+              </div>
+              <div class="event-card-small">
+                <div class="event-icon">😢</div>
+                <div class="event-name">슬럼프</div>
+              </div>
+              <div class="event-card-small">
+                <div class="event-icon">🌟</div>
+                <div class="event-name">깨달음</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Page 5: 시작하기 -->
+        <div class="storybook-page" data-page="5">
+          <div class="storybook-content">
+            <div class="storybook-emoji">🚀</div>
+            <h2 class="storybook-title">지금 시작하세요!</h2>
+            <p class="storybook-text">
+              민석이는 당신의 조언을 기다리고 있습니다<br>
+              함께 꿈을 향해 나아가봅시다!
+            </p>
+            <button class="storybook-start-btn" onclick="closeOnboarding()">
+              시작하기
+            </button>
+            <div class="skip-option">
+              <label>
+                <input type="checkbox" id="dontShowAgain">
+                다시 보지 않기
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 네비게이션 -->
+        <div class="storybook-navigation">
+          <button class="storybook-prev" onclick="previousPage()">← 이전</button>
+          <div class="storybook-dots">
+            <span class="dot active" data-page="1" onclick="goToPage(1)"></span>
+            <span class="dot" data-page="2" onclick="goToPage(2)"></span>
+            <span class="dot" data-page="3" onclick="goToPage(3)"></span>
+            <span class="dot" data-page="4" onclick="goToPage(4)"></span>
+            <span class="dot" data-page="5" onclick="goToPage(5)"></span>
+          </div>
+          <button class="storybook-next" onclick="nextPage()">다음 →</button>
         </div>
       </div>
     </div>

@@ -119,6 +119,10 @@ function appendMessage(sender, text, imageSrc = null) {
 
   if (sender === "user") {
     messageElem.textContent = text;
+  } else if (sender === "guide") {
+    // 가이드 메시지 타입
+    messageElem.classList.add("guide");
+    messageElem.innerHTML = text; // HTML 형식으로 표시
   } else {
     // 이미지가 있으면 먼저 표시
     if (imageSrc) {
@@ -257,82 +261,118 @@ function updateStatBar(statName, value) {
   }
 }
 
-// 이벤트 알림 표시
+// 알림 ID 카운터
+let notificationIdCounter = 0;
+
+// 이벤트 알림 표시 (스탯 패널 아래)
 function showEventNotification(eventInfo) {
-  const notification = document.createElement("div");
-  notification.className = "event-notification";
-  notification.innerHTML = `
-    <h3>🎭 ${eventInfo.event_name}</h3>
-    <p>${eventInfo.trigger_message}</p>
-    <button onclick="this.parentElement.remove()">확인</button>
-  `;
-  document.body.appendChild(notification);
+  const notifId = `notif-${notificationIdCounter++}`;
+  const container = document.getElementById("notifications-container");
+  if (!container) return;
 
-  // 자동으로 5초 후 제거
-  setTimeout(() => {
-    if (notification.parentElement) {
-      notification.remove();
-    }
-  }, 5000);
+  const notification = document.createElement("div");
+  notification.className = "notification-item event";
+  notification.id = notifId;
+  notification.innerHTML = `
+    <div class="notification-header" onclick="toggleNotification('${notifId}')">
+      <div class="notification-title">
+        🎭 ${eventInfo.event_name}
+      </div>
+      <button class="notification-close" onclick="removeNotification(event, '${notifId}')">×</button>
+    </div>
+    <div class="notification-body">
+      ${eventInfo.trigger_message}
+    </div>
+  `;
+
+  container.appendChild(notification);
 }
 
-// 힌트 알림 표시
+// 힌트 알림 표시 (스탯 패널 아래)
 function showHintNotification(hint) {
-  const notification = document.createElement("div");
-  notification.className = "hint-notification";
-  notification.innerHTML = `
-    <p>${hint}</p>
-    <button onclick="this.parentElement.remove()">닫기</button>
-  `;
-  document.body.appendChild(notification);
+  const notifId = `notif-${notificationIdCounter++}`;
+  const container = document.getElementById("notifications-container");
+  if (!container) return;
 
-  // 자동으로 10초 후 제거
-  setTimeout(() => {
-    if (notification.parentElement) {
-      notification.remove();
-    }
-  }, 10000);
+  const notification = document.createElement("div");
+  notification.className = "notification-item hint";
+  notification.id = notifId;
+  notification.innerHTML = `
+    <div class="notification-header" onclick="toggleNotification('${notifId}')">
+      <div class="notification-title">
+        💡 힌트
+      </div>
+      <button class="notification-close" onclick="removeNotification(event, '${notifId}')">×</button>
+    </div>
+    <div class="notification-body">
+      ${hint}
+    </div>
+  `;
+
+  container.appendChild(notification);
 }
+
+// 알림 펼치기/접기
+function toggleNotification(notifId) {
+  const notification = document.getElementById(notifId);
+  if (notification) {
+    notification.classList.toggle("expanded");
+  }
+}
+
+// 알림 제거
+function removeNotification(event, notifId) {
+  event.stopPropagation(); // 헤더 클릭 이벤트 방지
+  const notification = document.getElementById(notifId);
+  if (notification) {
+    notification.style.animation = "slideOutRight 0.3s";
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  }
+}
+
+// slideOutRight 애니메이션 추가 (CSS에 정의되어야 하지만 JavaScript로 처리)
+const style = document.createElement("style");
+style.textContent = `
+  @keyframes slideOutRight {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+`;
+document.head.appendChild(style);
 
 // ============================================================================
 // 게임 API 함수들
 // ============================================================================
 
-// 스탯 상세 조회
-async function fetchStatsDetail() {
-  try {
-    const response = await fetch(`/api/game/stats?username=${username}`);
-    const data = await response.json();
+// 스탯 상세 버튼 제거됨 (기존 스탯 패널에 통합)
 
-    if (data.success) {
-      // 모달에 데이터 표시
-      document.getElementById("detail-intimacy").textContent = data.stats.intimacy;
-      document.getElementById("detail-mental").textContent = data.stats.mental;
-      document.getElementById("detail-stamina").textContent = data.stats.stamina;
-      document.getElementById("detail-power").textContent = data.stats.power;
-      document.getElementById("detail-speed").textContent = data.stats.speed;
+// 가이드 메시지 표시
+function showGuideMessage(guide) {
+  if (!guide) return;
 
-      document.getElementById("detail-intimacy-level").textContent =
-        data.intimacy_level;
-      document.getElementById("detail-month").textContent = `${data.month}월`;
-      document.getElementById("detail-months-left").textContent = `${data.months_until_draft}개월`;
+  const guideHTML = `
+    <div class="guide-icon">🎯</div>
+    <div class="guide-content">
+      <div class="guide-title">${guide.title}</div>
+      <div class="guide-message">${guide.message}</div>
+      <div class="guide-goals">
+        <strong>목표:</strong>
+        <ul>
+          ${guide.goals.map(goal => `<li>${goal}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+  `;
 
-      // 이벤트 히스토리
-      const eventsList = document.getElementById("detail-events");
-      if (data.event_history.length > 0) {
-        eventsList.innerHTML = data.event_history
-          .map((event) => `<li>${event}</li>`)
-          .join("");
-      } else {
-        eventsList.innerHTML = "<li>아직 이벤트가 없습니다</li>";
-      }
-
-      openDetailModal("statsModal");
-    }
-  } catch (err) {
-    console.error("스탯 조회 실패:", err);
-    alert("스탯 조회에 실패했습니다.");
-  }
+  appendMessage("guide", guideHTML);
 }
 
 // 다음 달로 진행
@@ -350,6 +390,11 @@ async function advanceMonth() {
 
     if (data.success) {
       alert(data.message);
+
+      // 가이드 메시지 표시
+      if (data.guide) {
+        showGuideMessage(data.guide);
+      }
 
       // 이벤트가 있으면 표시
       if (data.event) {
@@ -466,12 +511,6 @@ function closeDetailModal(modalId) {
 // 버튼 이벤트 리스너
 // ============================================================================
 
-// 스탯 상세 버튼
-const btnStats = document.getElementById("btn-stats");
-if (btnStats) {
-  btnStats.addEventListener("click", fetchStatsDetail);
-}
-
 // 다음 달 버튼
 const btnAdvance = document.getElementById("btn-advance");
 if (btnAdvance) {
@@ -500,12 +539,110 @@ document.querySelectorAll(".detail-modal").forEach((modal) => {
 });
 
 // ============================================================================
+// 온보딩 스토리북 기능
+// ============================================================================
+
+let currentPage = 1;
+const totalPages = 5;
+
+// 온보딩 표시 체크 및 모달 열기
+function checkAndShowOnboarding() {
+  const hasSeenOnboarding = localStorage.getItem('onboarding_completed');
+
+  if (!hasSeenOnboarding) {
+    const modal = document.getElementById('onboardingModal');
+    if (modal) {
+      modal.classList.add('active');
+      updateNavigation();
+    }
+  }
+}
+
+// 온보딩 닫기
+function closeOnboarding() {
+  const dontShowAgain = document.getElementById('dontShowAgain');
+
+  if (dontShowAgain && dontShowAgain.checked) {
+    localStorage.setItem('onboarding_completed', 'true');
+  }
+
+  const modal = document.getElementById('onboardingModal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+}
+
+// 다음 페이지
+function nextPage() {
+  if (currentPage < totalPages) {
+    goToPage(currentPage + 1);
+  }
+}
+
+// 이전 페이지
+function previousPage() {
+  if (currentPage > 1) {
+    goToPage(currentPage - 1);
+  }
+}
+
+// 특정 페이지로 이동
+function goToPage(pageNumber) {
+  if (pageNumber < 1 || pageNumber > totalPages) return;
+
+  // 현재 페이지 비활성화
+  const currentPageElem = document.querySelector(`.storybook-page[data-page="${currentPage}"]`);
+  if (currentPageElem) {
+    currentPageElem.classList.remove('active');
+  }
+
+  // 새 페이지 활성화
+  const newPageElem = document.querySelector(`.storybook-page[data-page="${pageNumber}"]`);
+  if (newPageElem) {
+    newPageElem.classList.add('active');
+  }
+
+  // 현재 페이지 번호 업데이트
+  currentPage = pageNumber;
+
+  // 네비게이션 업데이트
+  updateNavigation();
+}
+
+// 네비게이션 업데이트 (버튼 활성화/비활성화, 닷 표시)
+function updateNavigation() {
+  // 이전/다음 버튼
+  const prevBtn = document.querySelector('.storybook-prev');
+  const nextBtn = document.querySelector('.storybook-next');
+
+  if (prevBtn) {
+    prevBtn.disabled = (currentPage === 1);
+  }
+
+  if (nextBtn) {
+    nextBtn.disabled = (currentPage === totalPages);
+  }
+
+  // 닷 네비게이션
+  document.querySelectorAll('.storybook-dots .dot').forEach((dot, index) => {
+    if (index + 1 === currentPage) {
+      dot.classList.add('active');
+    } else {
+      dot.classList.remove('active');
+    }
+  });
+}
+
+// ============================================================================
 // 페이지 로드
 // ============================================================================
 
 // 페이지 로드 시 초기 메시지 요청
 window.addEventListener("load", () => {
   console.log("페이지 로드 완료");
+
+  // 온보딩 체크 및 표시
+  checkAndShowOnboarding();
 
   setTimeout(() => {
     if (chatLog && chatLog.childElementCount === 0) {

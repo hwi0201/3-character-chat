@@ -1,20 +1,22 @@
 {
   "session_id": "박현빈",
-  "current_month": 3,
+  "current_month": 4,
   "current_day": 1,
   "stats": {
-    "intimacy": 0,
-    "mental": 50,
-    "stamina": 50,
-    "power": 30,
-    "speed": 40
+    "intimacy": 8,
+    "mental": 56,
+    "stamina": 49,
+    "power": 40,
+    "speed": 38
   },
   "flags": {
     "backstory_revealed": false,
     "homerun_flag": false,
     "steal_phobia_overcome": false
   },
-  "event_history": [],
+  "event_history": [
+    "4월 시작"
+  ],
   "special_moments": [],
   "training_schedule": {}
 }
