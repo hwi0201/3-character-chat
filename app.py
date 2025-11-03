@@ -17,7 +17,7 @@
 import os
 import json
 from pathlib import Path
-from flask import Flask, request, render_template, jsonify, url_for
+from flask import Flask, request, render_template, jsonify, url_for, Response, stream_with_context
 from dotenv import load_dotenv
 from services.storybook_manager import get_storybook_manager
 
@@ -109,25 +109,87 @@ def api_chat():
         data = request.get_json()
         user_message = data.get('message', '')
         username = data.get('username', '사용자')
-        
+
         if not user_message:
             return jsonify({'error': 'Message is required'}), 400
-        
+
         # 챗봇 서비스 임포트 (지연 로딩)
         from services import get_chatbot_service
-        
+
         # 응답 생성
         chatbot = get_chatbot_service()
         response = chatbot.generate_response(user_message, username)
-        
+
         return jsonify(response)
-        
+
     except ImportError as e:
         print(f"[ERROR] 챗봇 서비스 임포트 실패: {e}")
         return jsonify({'reply': '챗봇 서비스를 불러올 수 없습니다. services/chatbot_service.py를 구현해주세요.'}), 500
     except Exception as e:
         print(f"[ERROR] 응답 생성 실패: {e}")
         return jsonify({'reply': '죄송해요, 일시적인 오류가 발생했어요. 다시 시도해주세요.'}), 500
+
+
+@app.route('/api/chat/stream', methods=['POST'])
+def api_chat_stream():
+    """
+    SSE(Server-Sent Events)를 통한 실시간 스트리밍 응답
+
+    LangChain의 stream() 기능을 사용하여 토큰 단위로 실시간 전송
+    """
+    try:
+        data = request.get_json()
+        user_message = data.get('message', '')
+        username = data.get('username', '사용자')
+
+        if not user_message:
+            return jsonify({'error': 'Message is required'}), 400
+
+        from services import get_chatbot_service
+        import json
+
+        @stream_with_context
+        def generate():
+            """SSE 스트리밍 제너레이터"""
+            try:
+                chatbot = get_chatbot_service()
+
+                # 스트리밍 응답 생성
+                for event in chatbot.generate_response_stream(user_message, username):
+                    # SSE 형식으로 전송
+                    # data: {"type": "token", "content": "안녕"}
+                    event_json = json.dumps(event, ensure_ascii=False)
+                    yield f"data: {event_json}\n\n"
+
+            except Exception as e:
+                print(f"[ERROR] 스트리밍 중 오류: {e}")
+                import traceback
+                traceback.print_exc()
+
+                # 오류 이벤트 전송
+                error_event = {
+                    'type': 'error',
+                    'content': "죄송해요, 일시적인 오류가 발생했어요. 다시 시도해주세요."
+                }
+                error_json = json.dumps(error_event, ensure_ascii=False)
+                yield f"data: {error_json}\n\n"
+
+        # SSE 응답 반환
+        return Response(
+            generate(),
+            mimetype='text/event-stream',
+            headers={
+                'Cache-Control': 'no-cache',
+                'X-Accel-Buffering': 'no',  # Nginx 버퍼링 비활성화
+                'Connection': 'keep-alive'
+            }
+        )
+
+    except Exception as e:
+        print(f"[ERROR] 스트리밍 엔드포인트 오류: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': '스트리밍을 시작할 수 없습니다.'}), 500
 
 # ============================================================================
 # 게임 관련 API 엔드포인트
@@ -636,4 +698,5 @@ def health():
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     debug = os.getenv('FLASK_ENV') == 'development'
-    app.run(host='0.0.0.0', port=port, debug=debug)
+    # threaded=True는 SSE 스트리밍에 필수
+    app.run(host='0.0.0.0', port=port, debug=debug, threaded=True)

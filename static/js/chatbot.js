@@ -30,14 +30,61 @@ const AppState = {
 };
 
 // ============================================================================
+// 월별 정보 매핑
+// ============================================================================
+
+const MONTH_INFO = {
+  3: {
+    title: "3월 - 첫 만남",
+    subtitle: "민석이와의 여정이 시작됩니다",
+    description: "드래프트까지 6개월, 신뢰를 쌓아가는 시간"
+  },
+  4: {
+    title: "4월 - 봄의 시작",
+    subtitle: "기초를 다지는 시간",
+    description: "탄탄한 기본기로 미래를 준비합니다"
+  },
+  5: {
+    title: "5월 - 실전 훈련",
+    subtitle: "진짜 실력을 보여줄 시간",
+    description: "실전 기술을 연마하며 성장합니다"
+  },
+  6: {
+    title: "6월 - 중반전",
+    subtitle: "반환점을 돌았습니다",
+    description: "약점을 보완하고 강점을 극대화합니다"
+  },
+  7: {
+    title: "7월 - 여름 강화",
+    subtitle: "무더위를 뚫고 전진",
+    description: "체력과 멘탈을 끌어올립니다"
+  },
+  8: {
+    title: "8월 - 막바지 준비",
+    subtitle: "마지막 스퍼트",
+    description: "드래프트가 한 달 앞으로 다가왔습니다"
+  },
+  9: {
+    title: "9월 - 드래프트",
+    subtitle: "운명의 순간",
+    description: "6개월의 노력이 결실을 맺을 시간"
+  }
+};
+
+// ============================================================================
 // DOM 요소
 // ============================================================================
 
-const chatArea = document.querySelector(".chat-area");
-const username = chatArea ? chatArea.dataset.username : "사용자";
+const chatBookContainer = document.querySelector(".chat-book-container");
+const username = chatBookContainer ? chatBookContainer.dataset.username : "사용자";
 const chatLog = document.getElementById("chat-log");
 const userMessageInput = document.getElementById("user-message");
 const sendBtn = document.getElementById("send-btn");
+
+// 월별 페이지 요소
+const monthImageContainer = document.getElementById("month-image-container");
+const monthTitle = document.getElementById("month-title");
+const chatBookLeft = document.querySelector(".chat-book-left");
 
 // ============================================================================
 // 오류 처리 유틸리티
@@ -52,10 +99,10 @@ function showError(userMessage, error = null) {
   if (error) {
     console.error(error);
   }
-  appendMessage("bot", `❌ ${userMessage}`);
+  appendMessageSync("bot", `❌ ${userMessage}`);
 }
 
-// 메시지 전송 함수
+// 메시지 전송 함수 (EventSource 스트리밍 사용)
 async function sendMessage(isInitial = false) {
   let message;
 
@@ -65,15 +112,16 @@ async function sendMessage(isInitial = false) {
     message = userMessageInput.value.trim();
     if (!message) return;
 
-    appendMessage("user", message);
+    appendMessageSync("user", message);
     userMessageInput.value = "";
   }
 
   // 로딩 표시
-  const loadingId = appendMessage("bot", "생각 중...");
+  const loadingId = appendMessageSync("loading", "생각 중...");
 
   try {
-    const response = await fetch("/api/chat", {
+    // fetch로 POST 요청만 보내고 즉시 반환
+    const response = await fetch("/api/chat/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -86,21 +134,68 @@ async function sendMessage(isInitial = false) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
-
     // 로딩 메시지 제거
     removeMessage(loadingId);
 
-    // 응답 파싱 (간소화)
-    const replyText = (typeof data.reply === "object" && data.reply !== null)
-      ? (data.reply.reply || data.reply)
-      : data.reply;
-    const imagePath = (typeof data.reply === "object" && data.reply !== null)
-      ? (data.reply.image || null)
-      : null;
+    // 봇 메시지 컨테이너 생성 (빈 상태)
+    const messageId = createBotMessageContainer();
 
-    // 디버그 정보 콘솔 출력
-    if (data.debug) {
+    // 응답 읽기 (ReadableStream)
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    let buffer = '';
+    let fullResponse = '';
+    let metadata = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      // 버퍼에 추가
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE 이벤트 파싱 (data: {...}\n\n 형식)
+      const events = buffer.split('\n\n');
+      buffer = events.pop(); // 마지막 불완전한 이벤트는 버퍼에 유지
+
+      for (const eventStr of events) {
+        if (!eventStr.trim() || !eventStr.startsWith('data: ')) continue;
+
+        try {
+          const jsonStr = eventStr.substring(6); // 'data: ' 제거
+          const event = JSON.parse(jsonStr);
+
+          if (event.type === 'token') {
+            // 토큰을 실시간으로 추가
+            fullResponse += event.content;
+            updateBotMessageContent(messageId, fullResponse);
+
+          } else if (event.type === 'metadata') {
+            // 메타데이터 저장 (스탯 업데이트용)
+            metadata = event.content;
+
+          } else if (event.type === 'done') {
+            // 스트리밍 완료
+            console.log('[STREAM] 완료');
+
+          } else if (event.type === 'error') {
+            // 오류 처리
+            console.error('[STREAM] 오류:', event.content);
+            fullResponse = event.content;
+            updateBotMessageContent(messageId, fullResponse);
+          }
+
+        } catch (e) {
+          console.error('[STREAM] 이벤트 파싱 실패:', e, eventStr);
+        }
+      }
+    }
+
+    // 스트리밍 완료 후 메타데이터 처리
+    if (metadata && metadata.debug) {
+      const data = metadata;
+
       console.group("🎮 게임 상태 업데이트");
       console.log("📅 현재 시점:", `${data.debug.game_state.current_month}월 ${data.debug.game_state.current_day}일`);
       console.log("🎯 드래프트까지:", `${data.debug.game_state.months_until_draft}개월`);
@@ -133,40 +228,43 @@ async function sendMessage(isInitial = false) {
 
       // 스탯 UI 업데이트
       updateStatsUI(data.debug.game_state);
+
+      // 이벤트 알림 표시
+      if (data.event) {
+        showEventNotification(data.event);
+      }
+
+      // 힌트 표시
+      if (data.hint) {
+        showHintNotification(data.hint);
+      }
     }
 
-    appendMessage("bot", replyText, imagePath);
-
-    // 이벤트 알림 표시
-    if (data.event) {
-      showEventNotification(data.event);
-    }
-
-    // 힌트 표시
-    if (data.hint) {
-      showHintNotification(data.hint);
-    }
   } catch (error) {
     removeMessage(loadingId);
     showError("메시지 전송에 실패했습니다. 다시 시도해주세요.", error);
+    console.error('[STREAM] 전체 오류:', error);
   }
 }
 
-// 메시지 DOM에 추가
-function appendMessage(sender, text, imageSrc = null) {
+// 동기 메시지 추가 (즉시 표시, 스트리밍 없음)
+function appendMessageSync(sender, text, imageSrc = null) {
   const messageId = `msg-${AppState.counters.message++}`;
   const messageElem = document.createElement("div");
-  messageElem.classList.add("message", sender);
+  messageElem.classList.add("message", sender === "loading" ? "bot" : sender);
   messageElem.id = messageId;
 
   if (sender === "user") {
     messageElem.textContent = text;
   } else if (sender === "guide") {
-    // 가이드 메시지 타입
     messageElem.classList.add("guide");
-    messageElem.innerHTML = text; // HTML 형식으로 표시
+    messageElem.innerHTML = text;
   } else {
-    // 이미지가 있으면 먼저 표시
+    // bot 또는 loading 메시지
+    const textContainer = document.createElement("div");
+    textContainer.classList.add("bot-text-container");
+    textContainer.textContent = text;
+
     if (imageSrc) {
       const botImg = document.createElement("img");
       botImg.classList.add("bot-big-img");
@@ -175,10 +273,6 @@ function appendMessage(sender, text, imageSrc = null) {
       messageElem.appendChild(botImg);
     }
 
-    // 텍스트 추가
-    const textContainer = document.createElement("div");
-    textContainer.classList.add("bot-text-container");
-    textContainer.textContent = text;
     messageElem.appendChild(textContainer);
   }
 
@@ -188,6 +282,52 @@ function appendMessage(sender, text, imageSrc = null) {
   }
 
   return messageId;
+}
+
+// 봇 메시지 컨테이너 생성 (스트리밍용, 빈 상태로 생성)
+function createBotMessageContainer(imageSrc = null) {
+  const messageId = `msg-${AppState.counters.message++}`;
+  const messageElem = document.createElement("div");
+  messageElem.classList.add("message", "bot");
+  messageElem.id = messageId;
+
+  // 이미지가 있으면 추가
+  if (imageSrc) {
+    const botImg = document.createElement("img");
+    botImg.classList.add("bot-big-img");
+    botImg.src = imageSrc;
+    botImg.alt = "챗봇 이미지";
+    messageElem.appendChild(botImg);
+  }
+
+  // 텍스트 컨테이너 (빈 상태)
+  const textContainer = document.createElement("div");
+  textContainer.classList.add("bot-text-container");
+  textContainer.dataset.messageId = messageId; // 나중에 찾기 위한 ID 저장
+  messageElem.appendChild(textContainer);
+
+  if (chatLog) {
+    chatLog.appendChild(messageElem);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
+  return messageId;
+}
+
+// 봇 메시지 내용 업데이트 (스트리밍 토큰 추가)
+function updateBotMessageContent(messageId, content) {
+  const messageElem = document.getElementById(messageId);
+  if (!messageElem) return;
+
+  const textContainer = messageElem.querySelector('.bot-text-container');
+  if (!textContainer) return;
+
+  textContainer.textContent = content;
+
+  // 자동 스크롤
+  if (chatLog) {
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
 }
 
 // 메시지 제거
@@ -212,7 +352,14 @@ if (sendBtn) {
   sendBtn.addEventListener("click", () => sendMessage());
 }
 
-// 통합 모달 관리 함수
+// ============================================================================
+// 모달 관리 함수
+// ============================================================================
+
+/**
+ * 모달 열기
+ * @param {string} modalId - 모달 ID
+ */
 function openModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
@@ -220,11 +367,23 @@ function openModal(modalId) {
   }
 }
 
+/**
+ * 모달 닫기
+ * @param {string} modalId - 모달 ID
+ */
 function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
     modal.style.display = "none";
   }
+}
+
+/**
+ * 상세 모달 닫기 (힌트, 순간 등)
+ * @param {string} modalId - 모달 ID
+ */
+function closeDetailModal(modalId) {
+  closeModal(modalId);
 }
 
 // 모달 닫기 버튼
@@ -244,7 +403,58 @@ document.querySelectorAll(".modal, .detail-modal").forEach((modal) => {
   });
 });
 
+// ============================================================================
+// 월별 페이지 업데이트
+// ============================================================================
+
+/**
+ * 왼쪽 월별 페이지 업데이트
+ * @param {number} month - 현재 월 (3-9)
+ */
+function updateMonthPage(month) {
+  if (!month || month < 3 || month > 9) {
+    console.warn('[월 업데이트] 유효하지 않은 월:', month);
+    return;
+  }
+
+  const monthInfo = MONTH_INFO[month];
+  if (!monthInfo) {
+    console.warn('[월 업데이트] 월 정보 없음:', month);
+    return;
+  }
+
+  // 제목 업데이트
+  if (monthTitle) {
+    monthTitle.textContent = monthInfo.title;
+  }
+
+  // 부제목 업데이트
+  const subtitle = document.querySelector('.month-subtitle');
+  if (subtitle) {
+    subtitle.textContent = monthInfo.subtitle;
+  }
+
+  // 배경 클래스 업데이트 (월별 그라데이션 적용)
+  if (chatBookLeft) {
+    // 기존 월 클래스 제거
+    for (let i = 3; i <= 9; i++) {
+      chatBookLeft.classList.remove(`month-${i}`);
+    }
+    // 새 월 클래스 추가
+    chatBookLeft.classList.add(`month-${month}`);
+  }
+
+  console.log('[월 업데이트] 완료:', monthInfo.title);
+}
+
+// ============================================================================
 // 스탯 UI 업데이트
+// ============================================================================
+
+/**
+ * 스탯 UI 전체 업데이트
+ * @param {object} gameState - 게임 상태 객체
+ */
 function updateStatsUI(gameState) {
   if (!gameState || !gameState.stats) return;
 
@@ -259,11 +469,15 @@ function updateStatsUI(gameState) {
 
   // 월 정보 업데이트 (current_month 또는 month 둘 다 처리)
   const monthElem = document.getElementById("current-month");
-  if (monthElem) {
-    const month = gameState.current_month !== undefined ? gameState.current_month : gameState.month;
-    if (month !== undefined) {
-      monthElem.textContent = `${month}월`;
-    }
+  const month = gameState.current_month !== undefined ? gameState.current_month : gameState.month;
+
+  if (monthElem && month !== undefined) {
+    monthElem.textContent = `${month}월`;
+  }
+
+  // 월별 페이지 업데이트
+  if (month !== undefined) {
+    updateMonthPage(month);
   }
 
   // 친밀도 레벨 업데이트
@@ -517,13 +731,16 @@ async function closeOnboarding() {
 
   // 온보딩 종료 후 게임 초기화
   setTimeout(async () => {
-    // 1. 3월 가이드 메시지 표시
+    // 1. 게임 상태 가져오기 (월 정보 포함)
+    await fetchGameState();
+
+    // 2. 3월 가이드 메시지 표시
     show3MonthGuide();
 
-    // 2. 스토리북 확인
+    // 3. 스토리북 확인
     await checkInitialStorybook();
 
-    // 3. 초기 메시지 요청
+    // 4. 초기 메시지 요청
     setTimeout(() => {
       if (chatLog && chatLog.childElementCount === 0) {
         console.log("초기 메시지 요청");
@@ -648,11 +865,11 @@ function closeMarchGuide() {
 }
 
 // ============================================================================
-// 스토리북 기능 (간소화 버전)
+// 스토리북 기능 (책 통합 버전)
 // ============================================================================
 
 /**
- * 스토리북 로드 및 표시
+ * 스토리북 로드 및 표시 (책 안에서)
  * @param {string} storybookId - 스토리북 ID
  */
 async function loadAndShowStorybook(storybookId) {
@@ -673,8 +890,9 @@ async function loadAndShowStorybook(storybookId) {
         pages: AppState.storybook.current.pages.length
       });
 
-      showStorybookModal();
-      renderStorybookPage(0);
+      // 책 안에서 스토리북 표시
+      showStorybookInBook();
+      renderStorybookPageInBook(0);
 
       console.log('[스토리북] 로드 완료:', AppState.storybook.current.title);
     } else {
@@ -688,32 +906,58 @@ async function loadAndShowStorybook(storybookId) {
 }
 
 /**
- * 스토리북 모달 표시
+ * 책 안에서 스토리북 모드 표시
  */
-function showStorybookModal() {
-  const modal = document.getElementById('storybook-modal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    document.getElementById('storybook-title').textContent = AppState.storybook.current?.title || '';
-  }
+function showStorybookInBook() {
+  // 채팅 UI 숨기기
+  const monthImage = document.getElementById('month-image-container');
+  const chatContent = document.getElementById('chat-content');
+
+  if (monthImage) monthImage.classList.add('hidden');
+  if (chatContent) chatContent.classList.add('hidden');
+
+  // 스토리북 UI 표시
+  const storybookLeft = document.getElementById('storybook-content-left');
+  const storybookRight = document.getElementById('storybook-content-right');
+  const storybookNav = document.getElementById('storybook-nav');
+
+  if (storybookLeft) storybookLeft.classList.remove('hidden');
+  if (storybookRight) storybookRight.classList.remove('hidden');
+  if (storybookNav) storybookNav.classList.remove('hidden');
+
+  console.log('[스토리북] 모드 활성화');
 }
 
 /**
- * 스토리북 모달 숨기기
+ * 책 안에서 채팅 모드로 복귀
  */
-function hideStorybookModal() {
-  const modal = document.getElementById('storybook-modal');
-  if (modal) {
-    modal.classList.add('hidden');
-    AppState.storybook.isActive = false;
-  }
+function hideStorybookInBook() {
+  // 스토리북 UI 숨기기
+  const storybookLeft = document.getElementById('storybook-content-left');
+  const storybookRight = document.getElementById('storybook-content-right');
+  const storybookNav = document.getElementById('storybook-nav');
+
+  if (storybookLeft) storybookLeft.classList.add('hidden');
+  if (storybookRight) storybookRight.classList.add('hidden');
+  if (storybookNav) storybookNav.classList.add('hidden');
+
+  // 채팅 UI 표시
+  const monthImage = document.getElementById('month-image-container');
+  const chatContent = document.getElementById('chat-content');
+
+  if (monthImage) monthImage.classList.remove('hidden');
+  if (chatContent) chatContent.classList.remove('hidden');
+
+  AppState.storybook.isActive = false;
+  console.log('[스토리북] 모드 비활성화');
 }
 
+
 /**
- * 스토리북 페이지 렌더링 (간소화 버전)
+ * 책 안에서 스토리북 페이지 렌더링 (스트리밍 방식)
  * @param {number} pageIndex - 페이지 인덱스 (0부터 시작)
  */
-function renderStorybookPage(pageIndex) {
+async function renderStorybookPageInBook(pageIndex) {
   if (!AppState.storybook.current || !AppState.storybook.current.pages) {
     console.error('[스토리북] 스토리북 데이터 없음');
     return;
@@ -731,8 +975,14 @@ function renderStorybookPage(pageIndex) {
     image: page.image
   });
 
-  // 이미지 렌더링
-  const imageContainer = document.getElementById('storybook-image-container');
+  // 왼쪽 페이지: 제목
+  const storyTitle = document.getElementById('story-title');
+  if (storyTitle) {
+    storyTitle.textContent = AppState.storybook.current.title;
+  }
+
+  // 오른쪽 페이지: 이미지 먼저 로드
+  const imageContainer = document.getElementById('story-image-container');
   if (imageContainer) {
     if (page.image) {
       imageContainer.innerHTML = `<img src="${page.image}" alt="스토리 이미지" onerror="this.parentElement.innerHTML='<p class=\\'no-image-text\\'>이미지 로드 실패</p>'">`;
@@ -741,93 +991,87 @@ function renderStorybookPage(pageIndex) {
     }
   }
 
-  // 텍스트 렌더링
-  const textElem = document.getElementById('storybook-text');
-  if (textElem) {
-    textElem.textContent = page.text || '내용 없음';
+  // 왼쪽 페이지: 텍스트 (즉시 표시)
+  const storyText = document.getElementById('story-text');
+  if (storyText) {
+    const text = page.text || '내용 없음';
+    storyText.textContent = text;
   }
 
   console.log('[스토리북] 렌더링 완료');
 
   // 네비게이션 업데이트
-  updateStorybookNavigation();
+  updateStorybookNavigationInBook();
 }
 
-// 기존 복잡한 목표/스탯 변화 렌더링 함수 제거 (간소화된 버전에서는 불필요)
-
 /**
- * 스토리북 네비게이션 업데이트 (책 펼침 레이아웃)
+ * 책 안 스토리북 네비게이션 업데이트
  */
-function updateStorybookNavigation() {
-  const prevBtn = document.getElementById('storybook-prev');
-  const nextBtn = document.getElementById('storybook-next');
-  const startBtn = document.getElementById('storybook-start');
+function updateStorybookNavigationInBook() {
+  const prevBtn = document.getElementById('story-prev-btn');
+  const nextBtn = document.getElementById('story-next-btn');
+  const startBtn = document.getElementById('story-start-btn');
+  const progress = document.getElementById('story-progress');
 
   if (!AppState.storybook.current) return;
 
   const totalPages = AppState.storybook.current.pages.length;
-  const isFirstPage = AppState.storybook.currentPage === 0;
-  const isLastPage = AppState.storybook.currentPage === totalPages - 1;
-  const completionAction = AppState.storybook.current.completion_action;
+  const currentPage = AppState.storybook.currentPage;
+  const isFirstPage = currentPage === 0;
+  const isLastPage = currentPage === totalPages - 1;
 
-  // 이전 버튼 (첫 페이지에서는 비활성화)
-  if (prevBtn) {
-    prevBtn.disabled = isFirstPage;
+  // 이전/다음 버튼 상태
+  if (prevBtn) prevBtn.disabled = isFirstPage;
+  if (nextBtn) nextBtn.disabled = isLastPage;
+
+  // 진행도 표시
+  if (progress) {
+    progress.textContent = `${currentPage + 1} / ${totalPages}`;
   }
 
-  // 다음 버튼 (마지막 페이지에서는 비활성화)
-  if (nextBtn) {
-    nextBtn.disabled = isLastPage;
-  }
-
-  // "대화 시작하기" 버튼 (마지막 페이지에서만 표시)
+  // 시작 버튼 (마지막 페이지에서만 표시)
   if (startBtn) {
     if (isLastPage) {
-      startBtn.style.display = 'block';
+      startBtn.classList.remove('hidden');
 
-      // 게임 종료 액션이면 버튼 텍스트 변경
+      const completionAction = AppState.storybook.current.completion_action;
       if (completionAction === 'game_end') {
         startBtn.textContent = '게임 종료';
-        startBtn.onclick = () => {
-          hideStorybookModal();
-          alert('플레이해주셔서 감사합니다! 새로운 게임을 시작하려면 페이지를 새로고침하세요.');
-        };
       } else {
         startBtn.textContent = '대화 시작하기';
-        startBtn.onclick = storybookStart;
       }
     } else {
-      startBtn.style.display = 'none';
+      startBtn.classList.add('hidden');
     }
   }
 }
 
 /**
- * 이전 페이지로 이동
+ * 책 안 스토리북: 이전 페이지
  */
-function storybookPrev() {
+function storybookPrevInBook() {
   if (AppState.storybook.currentPage > 0) {
     AppState.storybook.currentPage--;
-    renderStorybookPage(AppState.storybook.currentPage);
+    renderStorybookPageInBook(AppState.storybook.currentPage);
     console.log('[스토리북] 이전 페이지:', AppState.storybook.currentPage);
   }
 }
 
 /**
- * 다음 페이지로 이동
+ * 책 안 스토리북: 다음 페이지
  */
-function storybookNext() {
+function storybookNextInBook() {
   if (AppState.storybook.current && AppState.storybook.currentPage < AppState.storybook.current.pages.length - 1) {
     AppState.storybook.currentPage++;
-    renderStorybookPage(AppState.storybook.currentPage);
+    renderStorybookPageInBook(AppState.storybook.currentPage);
     console.log('[스토리북] 다음 페이지:', AppState.storybook.currentPage);
   }
 }
 
 /**
- * 대화 시작하기 버튼 (스토리북 완료)
+ * 책 안 스토리북: 대화 시작하기
  */
-async function storybookStart() {
+async function storybookStartFromBook() {
   // 이미 처리 중이면 무시
   if (AppState.storybook.isProcessing) {
     console.log('[스토리북] 이미 처리 중...');
@@ -900,35 +1144,44 @@ async function completeStorybook() {
 }
 
 /**
- * 채팅 모드로 부드럽게 전환
+ * 채팅 모드로 부드럽게 전환 (책 안에서)
  */
 async function transitionToChatMode() {
-  const layer = document.getElementById('transition-layer');
+  console.log('[전환] 채팅 모드로 전환 시작');
 
+<<<<<<< HEAD
   // 페이드 아웃
   layer.classList.add('active');
   await wait(500);
 
   // 모달 숨기기
   hideStorybookModal();
+=======
+  // 스토리북 UI 숨기기
+  hideStorybookInBook();
+>>>>>>> 74db71e (feat: LangChain 실시간 스트리밍 구현 및 UI 개선)
 
   // 게임 상태 새로고침
   await fetchGameState();
 
+<<<<<<< HEAD
   // 페이드 인
   await wait(100);
   layer.classList.remove('active');
 
+=======
+>>>>>>> 74db71e (feat: LangChain 실시간 스트리밍 구현 및 UI 개선)
   console.log('[전환] 채팅 모드로 전환 완료');
 }
 
 /**
- * 스토리북 모드로 부드럽게 전환
+ * 스토리북 모드로 부드럽게 전환 (책 안에서)
  * @param {string} storybookId - 스토리북 ID
  */
 async function transitionToStorybookMode(storybookId) {
-  const layer = document.getElementById('transition-layer');
+  console.log('[전환] 스토리북 모드로 전환 시작');
 
+<<<<<<< HEAD
   // 페이드 아웃
   layer.classList.add('active');
   await wait(500);
@@ -940,25 +1193,35 @@ async function transitionToStorybookMode(storybookId) {
   await wait(100);
   layer.classList.remove('active');
 
+=======
+  // 스토리북 로드 및 표시
+  await loadAndShowStorybook(storybookId);
+
+>>>>>>> 74db71e (feat: LangChain 실시간 스트리밍 구현 및 UI 개선)
   console.log('[전환] 스토리북 모드로 전환 완료');
 }
 
 /**
- * 엔딩 스토리북으로 전환
+ * 엔딩 스토리북으로 전환 (책 안에서)
  * @param {object} endingStorybook - 엔딩 스토리북 데이터
  */
 async function transitionToEnding(endingStorybook) {
+<<<<<<< HEAD
   const layer = document.getElementById('transition-layer');
 
   // 페이드 아웃
   layer.classList.add('active');
   await wait(500);
+=======
+  console.log('[전환] 엔딩으로 전환 시작');
+>>>>>>> 74db71e (feat: LangChain 실시간 스트리밍 구현 및 UI 개선)
 
   // 엔딩 스토리북 설정
   AppState.storybook.current = endingStorybook;
   AppState.storybook.currentPage = 0;
   AppState.storybook.isActive = true;
 
+<<<<<<< HEAD
   // 타이틀 업데이트
   document.getElementById('storybook-title').textContent = endingStorybook.title;
 
@@ -971,6 +1234,11 @@ async function transitionToEnding(endingStorybook) {
   // 페이드 인
   await wait(100);
   layer.classList.remove('active');
+=======
+  // 스토리북 모드로 전환 및 렌더링
+  showStorybookInBook();
+  renderStorybookPageInBook(0);
+>>>>>>> 74db71e (feat: LangChain 실시간 스트리밍 구현 및 UI 개선)
 
   console.log('[전환] 엔딩으로 전환 완료:', endingStorybook.title);
 }
@@ -1052,6 +1320,9 @@ async function checkInitialStorybook() {
 window.addEventListener("load", async () => {
   console.log("페이지 로드 완료");
 
+  // 초기 월 설정 (기본값: 3월)
+  updateMonthPage(3);
+
   // 1. 온보딩 체크 및 표시 (최우선)
   const onboardingShown = checkAndShowOnboarding();
 
@@ -1059,6 +1330,9 @@ window.addEventListener("load", async () => {
   if (!onboardingShown) {
     // 초기 스토리북 확인
     await checkInitialStorybook();
+
+    // 게임 상태 가져오기 (월 정보 업데이트)
+    await fetchGameState();
 
     // 초기 메시지 요청
     setTimeout(() => {

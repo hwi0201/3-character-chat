@@ -53,25 +53,327 @@
         color: #666;
         padding: 5px 10px;
       }
-      .chat-area {
+
+      /* ========================================
+         채팅 책 레이아웃
+         ======================================== */
+      .chat-book-container {
         width: 100%;
-        max-width: 900px;
+        max-width: 1400px;
         flex: 1;
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         padding: 20px;
         box-sizing: border-box;
+      }
+
+      .chat-book {
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+        width: 100%;
+        height: calc(100vh - 120px);
+        max-height: 800px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+      }
+
+      /* 왼쪽 페이지: 월별 이미지 */
+      .chat-book-left {
+        flex: 1;
+        background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        position: relative;
+        transition: background 0.5s ease;
+      }
+
+      /* 채팅 모드: 월별 정보 */
+      .month-image {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        text-align: center;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+      }
+
+      .month-image.hidden {
+        opacity: 0;
+        pointer-events: none;
+        position: absolute;
+      }
+
+      .month-info {
+        color: white;
+        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .month-title {
+        font-size: 2.5em;
+        font-weight: 700;
+        margin: 0 0 15px 0;
+        color: white;
+      }
+
+      .month-subtitle {
+        font-size: 1.2em;
+        opacity: 0.9;
+        margin: 0;
+      }
+
+      /* 스토리북 모드: 왼쪽 페이지 */
+      .storybook-content-left {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding: 30px;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+        overflow: hidden;
+      }
+
+      .storybook-content-left.hidden {
+        opacity: 0;
+        pointer-events: none;
+        position: absolute;
+      }
+
+      .story-title {
+        color: white;
+        font-size: 2em;
+        font-weight: 700;
+        margin: 0 0 20px 0;
+        text-align: center;
+        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+        flex-shrink: 0;
+      }
+
+      .story-divider {
+        width: 80px;
+        height: 3px;
+        background: white;
+        margin: 0 auto 30px auto;
+        border-radius: 2px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        flex-shrink: 0;
+      }
+
+      .story-text {
+        color: white;
+        font-size: 1.15em;
+        line-height: 1.9;
+        text-align: left;
+        white-space: pre-line;
+        overflow-y: auto;
+        flex: 1;
+        padding-right: 10px;
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
         position: relative;
       }
-      #chat-log {
+
+      /* 스토리 텍스트 스크롤바 */
+      .story-text::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .story-text::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+      }
+
+      .story-text::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 3px;
+      }
+
+      .story-text::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      /* 오른쪽 페이지: 채팅 영역 */
+      .chat-book-right {
         flex: 1;
-        border: 1px solid #e0e0e0;
-        border-radius: 12px;
+        background: #fffef9;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+
+      /* 채팅 모드: 채팅 컨텐츠 */
+      .chat-content {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: 30px;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+      }
+
+      .chat-content.hidden {
+        opacity: 0;
+        pointer-events: none;
+        position: absolute;
+      }
+
+      .chat-log-scroll {
+        flex: 1;
+        overflow-y: auto;
         padding: 20px;
         background: white;
-        overflow-y: auto;
-        margin-bottom: 15px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 1px solid #e0e0e0;
+      }
+
+      /* 스토리북 모드: 오른쪽 페이지 */
+      .storybook-content-right {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+      }
+
+      .storybook-content-right.hidden {
+        opacity: 0;
+        pointer-events: none;
+        position: absolute;
+      }
+
+      .story-image-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.03);
+        border-radius: 12px;
+      }
+
+      .story-image-container img {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        object-fit: contain;
+      }
+
+      /* 스토리북 네비게이션 */
+      .storybook-nav {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 15px 25px;
+        border-radius: 30px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        z-index: 10;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+      }
+
+      .storybook-nav.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .story-nav-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-size: 0.95em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+      }
+
+      .story-nav-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+      }
+
+      .story-nav-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .story-progress {
+        color: #333;
+        font-size: 0.95em;
+        font-weight: 600;
+        min-width: 60px;
+        text-align: center;
+      }
+
+      .story-start-btn {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-size: 1.05em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(238, 90, 111, 0.4);
+        animation: pulse-glow 2s infinite;
+      }
+
+      .story-start-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(238, 90, 111, 0.6);
+      }
+
+      .story-start-btn.hidden {
+        display: none;
+      }
+
+      @keyframes pulse-glow {
+        0%, 100% {
+          box-shadow: 0 4px 12px rgba(238, 90, 111, 0.4);
+        }
+        50% {
+          box-shadow: 0 4px 20px rgba(238, 90, 111, 0.7);
+        }
+      }
+
+      /* 스크롤바 스타일 */
+      .chat-log-scroll::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .chat-log-scroll::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 4px;
+      }
+
+      .chat-log-scroll::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 4px;
+      }
+
+      .chat-log-scroll::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #764ba2, #667eea);
       }
       .message {
         margin-bottom: 15px;
@@ -171,7 +473,9 @@
         display: flex;
         gap: 10px;
         align-items: center;
+        flex-shrink: 0;
       }
+
       .chat-input-area input[type="text"] {
         flex: 1;
         padding: 12px 16px;
@@ -180,22 +484,135 @@
         font-size: 1rem;
         transition: border 0.2s;
       }
+
       .chat-input-area input[type="text"]:focus {
         outline: none;
         border-color: #764ba2;
       }
+
       .chat-input-area button.send-btn {
         padding: 12px 24px;
         border: none;
-
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: #fff;
         border-radius: 25px;
         font-size: 1rem;
+        font-weight: 600;
         cursor: pointer;
-        transition: transform 0.2s;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
       }
+
       .chat-input-area button.send-btn:hover {
         transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+      }
+
+      /* 월별 배경 그라데이션 */
+      .chat-book-left.month-3 {
+        background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+      }
+
+      .chat-book-left.month-4 {
+        background: linear-gradient(135deg, #a8e6cf 0%, #56ab2f 100%);
+      }
+
+      .chat-book-left.month-5 {
+        background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+      }
+
+      .chat-book-left.month-6 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      .chat-book-left.month-7 {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      }
+
+      .chat-book-left.month-8 {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      }
+
+      .chat-book-left.month-9 {
+        background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+      }
+
+      /* 모바일 반응형 (채팅 책 레이아웃) */
+      @media (max-width: 1024px) {
+        .chat-book {
+          flex-direction: column;
+          height: calc(100vh - 100px);
+        }
+
+        .chat-book-left {
+          max-height: 30%;
+          padding: 20px;
+        }
+
+        .month-title, .story-title {
+          font-size: 1.6em;
+        }
+
+        .month-subtitle {
+          font-size: 1em;
+        }
+
+        .story-text {
+          font-size: 1em;
+          line-height: 1.7;
+        }
+
+        .chat-content {
+          padding: 20px;
+        }
+
+        /* 스토리북 네비게이션 모바일 */
+        .storybook-nav {
+          bottom: 10px;
+          padding: 12px 20px;
+          gap: 15px;
+        }
+
+        .story-nav-btn {
+          padding: 8px 16px;
+          font-size: 0.85em;
+        }
+
+        .story-progress {
+          font-size: 0.85em;
+          min-width: 50px;
+        }
+
+        .story-start-btn {
+          padding: 10px 25px;
+          font-size: 0.95em;
+        }
+
+        /* 모바일에서 스탯 패널 숨김 (토글 버튼으로 대체 가능) */
+        .stats-panel {
+          display: none;
+        }
+
+        /* 모바일에서 알림 컨테이너도 숨김 */
+        .notifications-container {
+          display: none;
+        }
+
+        /* 모바일에서 왼쪽 버튼 그룹 크기 조정 */
+        .bottom-actions {
+          left: 10px;
+          gap: 8px;
+        }
+
+        .action-btn {
+          width: 60px;
+          height: 55px;
+          font-size: 1.2rem;
+        }
+
+        .action-btn-label {
+          font-size: 0.65rem;
+        }
       }
       .modal {
         display: none;
@@ -269,6 +686,23 @@
         padding: 20px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         z-index: 100;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+      }
+
+      /* 스탯 패널 스크롤바 */
+      .stats-panel::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .stats-panel::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 3px;
+      }
+
+      .stats-panel::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 3px;
       }
       .stats-panel h3 {
         margin: 0 0 15px 0;
@@ -685,14 +1119,35 @@
 
       .storybook-container {
         position: relative;
-        width: 100%;
-        height: 100%;
+        width: 90%;
+        max-width: 900px;
+        max-height: 90vh;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 0;
-        box-shadow: none;
-        padding: 60px 80px;
-        overflow: hidden;
+        border-radius: 20px;
+        box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+        padding: 40px 60px;
+        overflow-y: auto;
+        overflow-x: hidden;
         animation: bookOpen 0.6s ease-out;
+      }
+
+      /* 스토리북 스크롤바 스타일링 */
+      .storybook-container::-webkit-scrollbar {
+        width: 10px;
+      }
+
+      .storybook-container::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+      }
+
+      .storybook-container::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+      }
+
+      .storybook-container::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.5);
       }
 
       @keyframes bookOpen {
@@ -733,9 +1188,10 @@
       .storybook-page {
         display: none;
         width: 100%;
-        height: 100%;
+        min-height: 100%;
         opacity: 0;
         transition: opacity 0.5s ease;
+        padding-bottom: 100px;
       }
 
       .storybook-page.active {
@@ -1032,6 +1488,7 @@
       @media (max-width: 768px) {
         .storybook-container {
           width: 95%;
+          max-height: 85vh;
           padding: 30px 20px;
         }
 
@@ -1070,28 +1527,11 @@
       }
 
       /* ========================================
-         스토리북 모달 스타일 (책 펼침 레이아웃)
+         구형 스토리북 모달 (더 이상 사용하지 않음, 숨김 처리)
          ======================================== */
 
       .storybook-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        z-index: 10000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 1;
-        transition: opacity 0.3s ease;
-      }
-
-      .storybook-modal.hidden {
-        display: none;
-        opacity: 0;
-        pointer-events: none;
+        display: none !important;
       }
 
       /* 책 전체 컨테이너 */
@@ -1426,16 +1866,66 @@
       <!-- 알림이 여기에 추가됩니다 -->
     </div>
 
-    <div class="chat-area" data-username="{{ username }}">
-      <div id="chat-log"></div>
+    <!-- 채팅 책 레이아웃 (스토리북 통합) -->
+    <div class="chat-book-container" data-username="{{ username }}">
+      <div class="chat-book">
+        <!-- 왼쪽 페이지: 월별 이미지 OR 스토리북 텍스트 -->
+        <div class="chat-book-left month-3">
+          <!-- 채팅 모드: 월별 정보 -->
+          <div id="month-image-container" class="month-image">
+            <div class="month-info">
+              <h2 id="month-title" class="month-title">3월 - 첫 만남</h2>
+              <p class="month-subtitle">민석이와의 여정이 시작됩니다</p>
+            </div>
+          </div>
 
-      <div class="chat-input-area">
-        <input
-          type="text"
-          id="user-message"
-          placeholder="메시지를 입력하세요..."
-        />
-        <button class="send-btn" id="send-btn">전송</button>
+          <!-- 스토리북 모드: 스토리 텍스트 -->
+          <div id="storybook-content-left" class="storybook-content-left hidden">
+            <h2 id="story-title" class="story-title">3월 - 첫 만남</h2>
+            <div class="story-divider"></div>
+            <div id="story-text" class="story-text">스토리 텍스트가 여기에 표시됩니다.</div>
+          </div>
+        </div>
+
+        <!-- 책등 효과 -->
+        <div class="book-spine"></div>
+
+        <!-- 오른쪽 페이지: 채팅 영역 OR 스토리북 이미지 -->
+        <div class="chat-book-right">
+          <!-- 채팅 모드: 채팅 로그 -->
+          <div id="chat-content" class="chat-content">
+            <div id="chat-log" class="chat-log-scroll"></div>
+            <div class="chat-input-area">
+              <input
+                type="text"
+                id="user-message"
+                placeholder="메시지를 입력하세요..."
+              />
+              <button class="send-btn" id="send-btn">전송</button>
+            </div>
+          </div>
+
+          <!-- 스토리북 모드: 이미지 -->
+          <div id="storybook-content-right" class="storybook-content-right hidden">
+            <div id="story-image-container" class="story-image-container">
+              <p class="no-image-text">이미지 없음</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 스토리북 네비게이션 (책 하단) -->
+        <div id="storybook-nav" class="storybook-nav hidden">
+          <button id="story-prev-btn" class="story-nav-btn" onclick="storybookPrevInBook()">
+            ← 이전
+          </button>
+          <div id="story-progress" class="story-progress">1 / 5</div>
+          <button id="story-next-btn" class="story-nav-btn" onclick="storybookNextInBook()">
+            다음 →
+          </button>
+          <button id="story-start-btn" class="story-start-btn hidden" onclick="storybookStartFromBook()">
+            대화 시작하기
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1635,9 +2125,9 @@
     </div>
 
     <!-- ========================================
-         스토리북 모달 (책 펼침 레이아웃)
+         구형 스토리북 모달 (더 이상 사용하지 않음)
          ======================================== -->
-    <div id="storybook-modal" class="storybook-modal hidden">
+    <div id="storybook-modal" class="storybook-modal hidden" style="display: none !important;">
       <div class="storybook-book">
         <!-- 왼쪽 화살표 -->
         <button id="storybook-prev" class="storybook-arrow left" onclick="storybookPrev()">
@@ -1678,8 +2168,8 @@
       </div>
     </div>
 
-    <!-- 게임 모드 전환 레이어 -->
-    <div id="transition-layer" class="transition-layer"></div>
+    <!-- 게임 모드 전환 레이어 (더 이상 사용하지 않음) -->
+    <div id="transition-layer" class="transition-layer" style="display: none !important;"></div>
 
     <!-- Image Gallery Modal -->
     <div id="imageModal" class="modal">

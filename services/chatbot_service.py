@@ -741,6 +741,193 @@ class ChatbotService:
                 'image': None
             }
 
+    def generate_response_stream(self, user_message: str, username: str = "사용자"):
+        """
+        LangChain 스트리밍을 사용한 실시간 응답 생성
+
+        Args:
+            user_message (str): 사용자 입력
+            username (str): 사용자 이름 (session_id로도 사용됨)
+
+        Yields:
+            dict: 스트리밍 이벤트 데이터
+                - type: 'token' | 'metadata' | 'error' | 'done'
+                - content: 토큰 텍스트 또는 메타데이터
+        """
+        print(f"\n{'='*50}")
+        print(f"[USER] {username}: {user_message} (STREAMING)")
+
+        try:
+            # [1단계] 초기 메시지 처리
+            if user_message.strip().lower() == "init":
+                bot_name = self.config.get('name', '챗봇')
+                greeting = f"안녕! 나는 {bot_name}이야. 무엇이든 물어봐!"
+                print(f"[BOT] (초기 인사) {greeting}")
+                print(f"{'='*50}\n")
+
+                # 초기 인사는 한번에 전송
+                yield {
+                    'type': 'token',
+                    'content': greeting
+                }
+                yield {
+                    'type': 'done',
+                    'content': ''
+                }
+                return
+
+            # [2단계] RAG 검색 수행
+            context, similarity, metadata = self._search_similar(
+                query=user_message,
+                threshold=0.45,
+                top_k=5
+            )
+
+            has_context = (context is not None)
+
+            if has_context:
+                print(f"[RAG] ✓ Context found (유사도: {similarity:.4f})")
+            else:
+                print(f"[RAG] ✗ No context found (일반 대화 모드)")
+
+            # [3단계] ChatPromptTemplate 구성
+            prompt = self._build_prompt(context=context, session_id=username)
+
+            # [4단계] LCEL 체인 구성
+            print(f"[LLM] Building LangChain LCEL streaming pipeline...")
+
+            chain = prompt | self.llm
+
+            from langchain_core.runnables.history import RunnableWithMessageHistory
+
+            chain_with_history = RunnableWithMessageHistory(
+                chain,
+                self.get_session_history,
+                input_messages_key="input",
+                history_messages_key="history"
+            )
+
+            # [5단계] 스트리밍 실행
+            print(f"[LLM] Starting stream with session_id='{username}'...")
+
+            full_response = ""  # 전체 응답 수집 (스탯 계산용)
+
+            # 스트리밍으로 토큰 생성
+            for chunk in chain_with_history.stream(
+                {"input": user_message},
+                config={"configurable": {"session_id": username}}
+            ):
+                # AIMessage 또는 AIMessageChunk에서 content 추출
+                if hasattr(chunk, 'content'):
+                    token = chunk.content
+                    if token:  # 빈 토큰 필터링
+                        full_response += token
+                        yield {
+                            'type': 'token',
+                            'content': token
+                        }
+
+            print(f"[LLM] ✓ Stream completed")
+            print(f"[BOT] {full_response[:100]}...")
+            print(f"[MEMORY] ✓ Conversation automatically saved to session '{username}'")
+
+            # [6단계] 스탯 변화 계산 및 적용
+            game_state = self.game_manager.get_or_create(username)
+            old_stats = game_state.stats.to_dict()
+
+            stat_changes, stat_reason = self.stat_calculator.analyze_conversation(
+                user_message=user_message,
+                bot_reply=full_response,
+                game_state=game_state
+            )
+
+            if stat_changes:
+                game_state.stats.apply_changes(stat_changes)
+                print(f"[STAT] ✓ Stat changes applied: {stat_changes}")
+            else:
+                print(f"[STAT] No stat changes")
+
+            # [7단계] 게임 상태 저장
+            self.game_manager.save(username)
+            print(f"[GAME] ✓ Game state saved for '{username}'")
+
+            # [8단계] 이벤트 감지 및 힌트 제공
+            conversation_history = self.get_session_history(username).messages
+
+            event_info = self.event_detector.check_event(
+                game_state=game_state,
+                conversation_history=conversation_history,
+                recent_messages=10
+            )
+
+            hint = None
+            if len(conversation_history) >= 5:
+                hint = self.event_detector.get_hint(
+                    game_state=game_state,
+                    conversation_history=conversation_history,
+                    stuck_threshold=5
+                )
+
+            if event_info:
+                print(f"[EVENT] ✓ Event triggered: {event_info['event_name']}")
+            if hint:
+                print(f"[HINT] ✓ Hint provided: {hint}")
+
+            # [9단계] 메타데이터 전송
+            print(f"{'='*50}\n")
+
+            metadata = {
+                'debug': {
+                    'game_state': {
+                        'current_month': game_state.current_month,
+                        'current_day': game_state.current_day,
+                        'stats': game_state.stats.to_dict(),
+                        'intimacy_level': self.stat_calculator.get_intimacy_level(game_state.stats.intimacy),
+                        'months_until_draft': game_state.get_months_until_draft(),
+                    },
+                    'stat_changes': {
+                        'changes': stat_changes,
+                        'reason': stat_reason,
+                        'old_stats': old_stats,
+                        'new_stats': game_state.stats.to_dict()
+                    },
+                    'event_check': {
+                        'triggered': event_info is not None,
+                        'event_name': event_info['event_name'] if event_info else None
+                    },
+                    'hint_provided': hint is not None,
+                    'conversation_count': len(conversation_history),
+                    'event_history': game_state.event_history
+                }
+            }
+
+            if event_info:
+                metadata['event'] = event_info
+            if hint:
+                metadata['hint'] = hint
+
+            yield {
+                'type': 'metadata',
+                'content': metadata
+            }
+
+            # [10단계] 완료 신호
+            yield {
+                'type': 'done',
+                'content': ''
+            }
+
+        except Exception as e:
+            print(f"[ERROR] 스트리밍 응답 생성 실패: {e}")
+            import traceback
+            traceback.print_exc()
+            print(f"{'='*50}\n")
+
+            yield {
+                'type': 'error',
+                'content': "죄송해요, 일시적인 오류가 발생했어요. 다시 시도해주세요."
+            }
+
 
 # ============================================================================
 # 싱글톤 패턴
