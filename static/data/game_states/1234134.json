@@ -1,6 +1,6 @@
 {
-  "session_id": "2312345",
-  "current_month": 9,
+  "session_id": "1234134",
+  "current_month": 5,
   "current_day": 1,
   "stats": {
     "intimacy": 0,
@@ -18,22 +18,11 @@
   "special_moments": [],
   "training_schedule": {},
   "current_phase": "storybook",
-  "current_storybook_id": "9_opening",
+  "current_storybook_id": "4_to_5_transition",
   "storybook_completed": {
     "3_opening": true,
     "3_to_4_transition": true,
-    "4_opening": true,
-    "4_to_5_transition": true,
-    "5_opening": true,
-    "5_to_6_transition": true,
-    "6_opening": true,
-    "6_to_7_transition": true,
-    "7_opening": true,
-    "7_to_8_transition": true,
-    "8_opening": true,
-    "8_to_9_transition": true,
-    "9_opening": true,
-    "9_ending": true
+    "4_opening": true
   },
   "previous_month_stats": {}
 }

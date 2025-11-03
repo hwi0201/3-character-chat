@@ -929,8 +929,8 @@
         font-weight: 600;
       }
 
-      /* 시작 버튼 */
-      .storybook-start-btn {
+      /* 시작 버튼 (온보딩 전용) */
+      .onboarding-start-btn {
         background: white;
         color: #764ba2;
         border: none;
@@ -944,7 +944,7 @@
         box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
       }
 
-      .storybook-start-btn:hover {
+      .onboarding-start-btn:hover {
         transform: translateY(-3px);
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
       }
@@ -1070,7 +1070,7 @@
       }
 
       /* ========================================
-         스토리북 모달 스타일 (간소화 버전)
+         스토리북 모달 스타일 (책 펼침 레이아웃)
          ======================================== */
 
       .storybook-modal {
@@ -1079,7 +1079,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.95);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         z-index: 10000;
         display: flex;
         align-items: center;
@@ -1094,115 +1094,186 @@
         pointer-events: none;
       }
 
-      .storybook-box {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 16px;
-        width: 90%;
-        max-width: 800px;
-        max-height: 90vh;
-        overflow: hidden;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      /* 책 전체 컨테이너 */
+      .storybook-book {
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+        width: 95%;
+        max-width: 1200px;
+        height: 90vh;
+        max-height: 700px;
       }
 
-      /* 상단: 제목 바 */
-      .storybook-title-bar {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .storybook-title-bar h2 {
+      /* 화살표 버튼 */
+      .storybook-arrow {
+        background: rgba(255, 255, 255, 0.2);
+        border: 3px solid white;
         color: white;
-        margin: 0;
-        font-size: 1.8em;
-        text-align: center;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        font-size: 2em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       }
 
-      /* 중간: 이미지 영역 */
-      .storybook-image-area {
-        background: rgba(255, 255, 255, 0.05);
-        padding: 30px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        min-height: 200px;
+      .storybook-arrow:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.4);
+        transform: scale(1.1);
+      }
+
+      .storybook-arrow:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      /* 책 페이지 컨테이너 */
+      .storybook-pages {
+        display: flex;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+        height: 100%;
+        flex: 1;
+        max-width: 1000px;
+      }
+
+      /* 왼쪽 페이지 (이미지) */
+      .storybook-page-left {
+        flex: 1;
+        background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        position: relative;
+      }
+
+      .page-image {
+        width: 100%;
+        height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
       }
 
-      .storybook-image-area img {
+      .page-image img {
         max-width: 100%;
-        max-height: 300px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        max-height: 100%;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        object-fit: contain;
       }
 
       .no-image-text {
-        color: rgba(255, 255, 255, 0.5);
-        font-size: 1.1em;
+        color: rgba(0, 0, 0, 0.3);
+        font-size: 1.2em;
         font-style: italic;
-        margin: 0;
       }
 
-      /* 하단: 텍스트 영역 */
-      .storybook-text-area {
-        padding: 30px;
+      /* 책등 효과 */
+      .book-spine {
+        width: 4px;
+        background: linear-gradient(to bottom,
+          rgba(0, 0, 0, 0.1) 0%,
+          rgba(0, 0, 0, 0.3) 50%,
+          rgba(0, 0, 0, 0.1) 100%);
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      }
+
+      /* 오른쪽 페이지 (텍스트) */
+      .storybook-page-right {
         flex: 1;
-        overflow-y: auto;
-        max-height: 300px;
+        background: #fffef9;
+        padding: 50px 40px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
       }
 
-      .storybook-text-area p {
-        color: white;
+      .page-content {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .page-title {
+        color: #2d3436;
+        font-size: 1.8em;
+        margin: 0 0 20px 0;
+        font-weight: 600;
+        text-align: left;
+        flex-shrink: 0;
+      }
+
+      .page-divider {
+        width: 60px;
+        height: 3px;
+        background: linear-gradient(to right, #667eea, #764ba2);
+        margin-bottom: 30px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
+
+      .page-text {
+        color: #2d3436;
         font-size: 1.15em;
-        line-height: 1.8;
+        line-height: 1.9;
         margin: 0;
         white-space: pre-line;
-      }
-
-      /* 네비게이션 바 */
-      .storybook-nav-bar {
-        background: rgba(0, 0, 0, 0.2);
-        padding: 20px;
-        display: flex;
-        justify-content: space-between;
-        gap: 10px;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .storybook-btn {
-        background: rgba(255, 255, 255, 0.2);
-        border: 2px solid white;
-        color: white;
-        padding: 12px 20px;
-        font-size: 1em;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
+        text-align: justify;
+        overflow-y: auto;
         flex: 1;
+        padding-right: 10px;
       }
 
-      .storybook-btn:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
+      /* 스크롤바 스타일 (텍스트 영역) */
+      .page-text::-webkit-scrollbar {
+        width: 8px;
       }
 
-      .storybook-btn:disabled {
-        opacity: 0.3;
-        cursor: not-allowed;
+      .page-text::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 4px;
       }
 
-      .storybook-btn.primary {
-        background: white;
-        color: #667eea;
+      .page-text::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 4px;
+      }
+
+      .page-text::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #764ba2, #667eea);
+      }
+
+      /* 대화 시작 버튼 */
+      .storybook-start-btn {
+        display: none;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 40px;
+        font-size: 1.1em;
         font-weight: bold;
-        border-color: white;
+        border-radius: 30px;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        align-self: center;
+        flex-shrink: 0;
       }
 
-      .storybook-btn.primary:hover {
-        background: #f0f0f0;
+      .storybook-start-btn:hover {
         transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
       }
 
       /* 전환 레이어 */
@@ -1223,26 +1294,57 @@
         opacity: 1;
       }
 
-      /* 모바일 반응형 */
+      /* 모바일 반응형 (책 레이아웃) */
       @media (max-width: 768px) {
-        .storybook-modal .storybook-content {
-          padding: 20px;
+        .storybook-book {
+          flex-direction: column;
+          gap: 15px;
+          width: 100%;
+          height: 100vh;
+          max-height: none;
+        }
+
+        .storybook-arrow {
+          width: 50px;
+          height: 50px;
+          font-size: 1.5em;
+        }
+
+        .storybook-pages {
+          flex-direction: column;
           max-width: 95%;
+          height: 80vh;
         }
 
-        .storybook-modal .storybook-page h2 {
-          font-size: 1.8em;
+        .storybook-page-left {
+          max-height: 30%;
+          padding: 20px;
         }
 
-        .storybook-modal .storybook-page p {
-          font-size: 1.1em;
+        .storybook-page-right {
+          flex: 1;
+          padding: 20px;
         }
 
-        .storybook-nav-btn {
-          padding: 10px 15px;
+        .page-title {
+          font-size: 1.5em;
+          margin-bottom: 15px;
+        }
+
+        .page-divider {
+          margin-bottom: 15px;
+        }
+
+        .page-text {
           font-size: 1em;
+          line-height: 1.7;
         }
 
+        .storybook-start-btn {
+          padding: 12px 30px;
+          font-size: 1em;
+          margin-top: 15px;
+        }
       }
     </style>
   </head>
@@ -1505,7 +1607,7 @@
               민석이는 당신의 조언을 기다리고 있습니다<br>
               함께 꿈을 향해 나아가봅시다!
             </p>
-            <button class="storybook-start-btn" onclick="closeOnboarding()">
+            <button class="onboarding-start-btn" onclick="closeOnboarding()">
               시작하기
             </button>
             <div class="skip-option">
@@ -1533,33 +1635,46 @@
     </div>
 
     <!-- ========================================
-         스토리북 모달 (간소화 버전)
+         스토리북 모달 (책 펼침 레이아웃)
          ======================================== -->
     <div id="storybook-modal" class="storybook-modal hidden">
-      <div class="storybook-box">
-        <!-- 상단: 제목 -->
-        <div class="storybook-title-bar">
-          <h2 id="storybook-title">3월 - 첫 만남</h2>
-        </div>
+      <div class="storybook-book">
+        <!-- 왼쪽 화살표 -->
+        <button id="storybook-prev" class="storybook-arrow left" onclick="storybookPrev()">
+          ←
+        </button>
 
-        <!-- 중간: 이미지 영역 -->
-        <div class="storybook-image-area">
-          <div id="storybook-image-container">
-            <p class="no-image-text">이미지 없음</p>
+        <!-- 책 페이지 컨테이너 -->
+        <div class="storybook-pages">
+          <!-- 왼쪽 페이지: 이미지 -->
+          <div class="storybook-page-left">
+            <div id="storybook-image-container" class="page-image">
+              <p class="no-image-text">이미지 없음</p>
+            </div>
+          </div>
+
+          <!-- 가운데 책등 효과 -->
+          <div class="book-spine"></div>
+
+          <!-- 오른쪽 페이지: 제목 + 텍스트 -->
+          <div class="storybook-page-right">
+            <div class="page-content">
+              <h2 id="storybook-title" class="page-title">3월 - 첫 만남</h2>
+              <div class="page-divider"></div>
+              <p id="storybook-text" class="page-text">스토리 텍스트가 여기에 표시됩니다.</p>
+
+              <!-- 대화 시작하기 버튼 (마지막 페이지에서만 표시) -->
+              <button id="storybook-start" class="storybook-start-btn" onclick="storybookStart()">
+                대화 시작하기
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- 하단: 텍스트 영역 -->
-        <div class="storybook-text-area">
-          <p id="storybook-text">스토리 텍스트가 여기에 표시됩니다.</p>
-        </div>
-
-        <!-- 네비게이션 -->
-        <div class="storybook-nav-bar">
-          <button id="storybook-prev" class="storybook-btn" onclick="storybookPrev()">← 이전</button>
-          <button id="storybook-start" class="storybook-btn primary" onclick="storybookStart()">대화 시작하기</button>
-          <button id="storybook-next" class="storybook-btn" onclick="storybookNext()">다음 →</button>
-        </div>
+        <!-- 오른쪽 화살표 -->
+        <button id="storybook-next" class="storybook-arrow right" onclick="storybookNext()">
+          →
+        </button>
       </div>
     </div>
 

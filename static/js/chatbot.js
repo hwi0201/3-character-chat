@@ -756,7 +756,7 @@ function renderStorybookPage(pageIndex) {
 // 기존 복잡한 목표/스탯 변화 렌더링 함수 제거 (간소화된 버전에서는 불필요)
 
 /**
- * 스토리북 네비게이션 업데이트 (간소화 버전)
+ * 스토리북 네비게이션 업데이트 (책 펼침 레이아웃)
  */
 function updateStorybookNavigation() {
   const prevBtn = document.getElementById('storybook-prev');
@@ -773,17 +773,17 @@ function updateStorybookNavigation() {
   // 이전 버튼 (첫 페이지에서는 비활성화)
   if (prevBtn) {
     prevBtn.disabled = isFirstPage;
-    prevBtn.style.opacity = isFirstPage ? '0.5' : '1';
   }
 
-  // 마지막 페이지일 때
-  if (isLastPage) {
-    // "다음" 버튼 숨기기
-    if (nextBtn) nextBtn.style.display = 'none';
+  // 다음 버튼 (마지막 페이지에서는 비활성화)
+  if (nextBtn) {
+    nextBtn.disabled = isLastPage;
+  }
 
-    // "대화 시작하기" 또는 "게임 종료" 버튼 표시
-    if (startBtn) {
-      startBtn.style.display = 'inline-block';
+  // "대화 시작하기" 버튼 (마지막 페이지에서만 표시)
+  if (startBtn) {
+    if (isLastPage) {
+      startBtn.style.display = 'block';
 
       // 게임 종료 액션이면 버튼 텍스트 변경
       if (completionAction === 'game_end') {
@@ -796,11 +796,9 @@ function updateStorybookNavigation() {
         startBtn.textContent = '대화 시작하기';
         startBtn.onclick = storybookStart;
       }
+    } else {
+      startBtn.style.display = 'none';
     }
-  } else {
-    // 중간 페이지일 때
-    if (nextBtn) nextBtn.style.display = 'inline-block';
-    if (startBtn) startBtn.style.display = 'none';
   }
 }
 
