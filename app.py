@@ -20,6 +20,7 @@ from pathlib import Path
 from flask import Flask, request, render_template, jsonify, url_for, Response, stream_with_context
 from dotenv import load_dotenv
 from services.storybook_manager import get_storybook_manager
+from services.game_event_manager import get_game_event_manager
 
 # 환경변수 로드
 load_dotenv()
@@ -199,37 +200,37 @@ def api_chat_stream():
 MONTH_GUIDES = {
     3: {
         "title": "3월 - 시즌 준비",
-        "message": "드래프트까지 7개월! 민석이와 친밀도를 쌓고 기초 체력을 다지세요.",
-        "goals": ["친밀도 20 이상", "체력 60 이상"]
+        "message": "드래프트까지 7개월! 강태와 친밀도를 쌓고 기초 체력을 다지세요.",
+        "goals": ["친밀도 20 이상", "체력 50 이상"]
     },
     4: {
         "title": "4월 - 본격 시작",
-        "message": "시즌이 시작되었습니다. 민석이의 훈련을 도와주세요.",
-        "goals": ["친밀도 40 이상", "멘탈 60 이상"]
+        "message": "시즌이 시작되었습니다. 강태의 훈련을 도와주세요.",
+        "goals": ["친밀도 40 이상", "멘탈 45 이상"]
     },
     5: {
         "title": "5월 - 시즌 중반",
         "message": "시즌이 본격화되고 있습니다. 체력과 멘탈 관리가 중요해요.",
-        "goals": ["체력 70 이상", "멘탈 65 이상", "친밀도 55 이상"]
+        "goals": ["체력 60 이상", "멘탈 50 이상", "친밀도 55 이상"]
     },
     6: {
         "title": "6월 - 중요한 시기",
         "message": "드래프트까지 절반! 전력 향상에 집중할 시간입니다.",
-        "goals": ["힘 50 이상", "주루 50 이상", "친밀도 70 이상"]
+        "goals": ["타격 50 이상", "주루 55 이상", "친밀도 70 이상"]
     },
     7: {
         "title": "7월 - 여름 훈련",
         "message": "더운 날씨지만 훈련 강도를 높여야 합니다. 스트레스 관리도 필수!",
-        "goals": ["체력 80 이상", "멘탈 75 이상", "힘 65 이상"]
+        "goals": ["체력 70 이상", "멘탈 60 이상", "타격 65 이상"]
     },
     8: {
         "title": "8월 - 막바지 준비",
         "message": "드래프트가 한 달 앞으로! 마지막 점검이 필요합니다.",
-        "goals": ["모든 스탯 70 이상", "친밀도 85 이상"]
+        "goals": ["모든 기술/신체 스탯 70 이상", "친밀도 85 이상"]
     },
     9: {
         "title": "9월 - 드래프트 직전",
-        "message": "드래프트가 곧 시작됩니다! 민석이와 함께한 시간을 돌아보세요.",
+        "message": "드래프트가 곧 시작됩니다! 강태와 함께한 시간을 돌아보세요.",
         "goals": ["최종 점검", "드래프트 준비 완료"]
     }
 }
@@ -447,7 +448,43 @@ def api_get_moments():
     except Exception as e:
         print(f"[ERROR] 특별한 순간 조회 실패: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+    
+# <<< 수정 시작: '어머니 대화 모드'로 전환하는 새로운 API 엔드포인트 추가 >>>
+# 이유: 5월 이벤트에서 사용자가 '집으로 찾아간다'를 선택했을 때,
+#      프론트엔드(chatbot.js)가 이 API를 호출하여 게임 상태를 변경하도록 요청해야 합니다.
+@app.route('/api/game/set-dialogue-mode', methods=['POST'])
+def set_dialogue_mode():
+    """특정 대화 모드로 진입/종료하는 API"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        mode = data.get('mode', 'normal')
 
+        if not username:
+            return jsonify({'success': False, 'error': 'Username is required'}), 400
+
+        from services import get_chatbot_service
+        chatbot = get_chatbot_service()
+        game_state = chatbot.game_manager.get_or_create(username)
+        
+        # 게임 상태의 대화 모드를 변경하고 저장
+        game_state.dialogue_mode = mode
+        chatbot.game_manager.save(username)
+        
+        print(f"[Mode Change] {username}님의 대화 모드가 '{mode}'로 변경되었습니다.")
+        
+        # '어머니 대화 모드' 시작 시, 어머니의 첫 대사를 반환
+        if mode == "mother_chat":
+            return jsonify({
+                'success': True, 
+                'initial_message': "......누구세요?"
+            })
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"[ERROR] 대화 모드 변경 실패: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+# <<< 수정 끝 >>>    
 
 # ============================================================================
 # 스토리북 관련 API 엔드포인트
@@ -626,13 +663,33 @@ def api_complete_storybook():
         chatbot = get_chatbot_service()
         game_state = chatbot.game_manager.get_or_create(username)
 
-        storybook_manager = get_storybook_manager()
+        if game_state.next_action == "decide_steal" and storybook_id == "8_result_hit":
+            print("[Game Event] '안타' 스토리북 완료. '도루' 결과를 계산합니다.")
+            event_manager = get_game_event_manager()
+            steal_result, _ = event_manager.calculate_steal_result(game_state)
+
+            if steal_result == "steal_success":
+                game_state.flags['tournament_result'] = 'hit_steal'
+                next_storybook_id = "8_steal_success"
+            else: # steal_fail
+                game_state.flags['tournament_result'] = 'hit'
+                next_storybook_id = "8_steal_fail"
+            
+            game_state.next_action = None # 모든 이벤트 종료
+            game_state.set_storybook_mode(next_storybook_id)
+            chatbot.game_manager.save(username)
+            
+            return jsonify({
+                'success': True,
+                'next_action': 'show_next_storybook',
+                'next_storybook_id': next_storybook_id
+            })
 
         # 스토리북 완료 표시
         game_state.mark_storybook_completed(storybook_id)
 
         # 스토리북 정보 가져오기
-        storybook = storybook_manager.get_storybook(storybook_id)
+        storybook = get_storybook_manager().get_storybook(storybook_id)
         completion_action = storybook.get('completion_action', {})
 
         # completion_action이 문자열인지 딕셔너리인지 확인 (하위 호환성)
@@ -654,8 +711,12 @@ def api_complete_storybook():
         }
 
         # 액션 타입에 따라 처리
-        if action_type == 'start_chat_mode':
-            # 채팅 모드로 전환
+        if storybook_id == '8_opening':
+            game_state.next_action = "submit_advice"
+            response_data['next_action'] = 'await_user_input' # 프론트엔드에 사용자 입력을 기다리라고 알림
+            print("[Game Event] '조언 제출 대기' 모드로 전환됩니다.")
+        
+        elif action_type == 'start_chat_mode':
             game_state.set_chat_mode()
             response_data['message'] = '대화를 시작하세요'
 
@@ -700,3 +761,59 @@ if __name__ == '__main__':
     debug = os.getenv('FLASK_ENV') == 'development'
     # threaded=True는 SSE 스트리밍에 필수
     app.run(host='0.0.0.0', port=port, debug=debug, threaded=True)
+
+
+# <<< 수정 시작: 8월 대회 이벤트를 처리하는 새로운 API 엔드포인트 추가 >>>
+# 이유: 사용자가 입력한 '조언'을 받아 타석 결과를 계산하고, 그 결과에 맞는 다음 스토리북을 알려주는 역할을 합니다.
+@app.route('/api/game/play-at-bat', methods=['POST'])
+def play_at_bat():
+    """8월 대회에서 사용자의 조언을 바탕으로 타석 결과를 결정합니다."""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        advice = data.get('advice')
+
+        if not username or not advice:
+            return jsonify({'success': False, 'error': 'Username and advice are required'}), 400
+
+        from services import get_chatbot_service
+        from services.game_event_manager import get_game_event_manager
+
+        chatbot = get_chatbot_service()
+        game_state = chatbot.game_manager.get_or_create(username)
+        
+        # 이벤트 계산기 실행
+        event_manager = get_game_event_manager()
+        result, details = event_manager.calculate_at_bat_result(advice, game_state.stats.stamina)
+
+        # <<< 수정 시작: 결과에 따라 '다음 행동' 플래그를 설정하거나 초기화 >>>
+        # 이유: '안타'가 나왔을 경우, 다음 단계가 '도루 결정'임을 시스템에 알려줘야 합니다.
+        if result == "hit":
+            game_state.next_action = "decide_steal"
+            next_storybook_id = "8_result_hit"
+        elif result == "homerun":
+            game_state.flags['tournament_result'] = 'homerun'
+            game_state.next_action = None # 이벤트 종료
+            next_storybook_id = "8_result_homerun"
+        else: # strikeout
+            game_state.flags['tournament_result'] = 'strikeout'
+            game_state.next_action = None # 이벤트 종료
+            next_storybook_id = "8_result_strikeout"
+        # <<< 수정 끝 >>>
+
+        game_state.set_storybook_mode(next_storybook_id)
+        chatbot.game_manager.save(username)
+
+        return jsonify({
+            'success': True,
+            'result': result,
+            'next_storybook_id': next_storybook_id,
+            'details': details
+        })
+
+    except Exception as e:
+        print(f"[ERROR] 8월 이벤트 API 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': '서버 오류가 발생했습니다.'}), 500
+# <<< 수정 끝 >>>

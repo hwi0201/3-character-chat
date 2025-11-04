@@ -8,6 +8,7 @@
 import json
 from pathlib import Path
 from typing import Dict, Optional, Tuple
+import random # <<수정: 확률 계산 위해 추가
 
 
 class StorybookManager:
@@ -158,11 +159,12 @@ class StorybookManager:
         # 현재 스탯 가져오기
         current_stats = game_state.stats.to_dict()
 
-        # 스탯 이름 매핑 (config와 GameState 간 불일치 해결)
-        # config: "running" <-> GameState: "speed"
-        stat_mapping = {
-            'running': 'speed'  # config의 running을 GameState의 speed로 매핑
-        }
+        # <<< 수정 시작: 오래된 stat_mapping 제거 >>>
+        # 이유: 이제 config 파일과 GameState의 스탯 이름이 일치하므로 매핑이 필요 없습니다.
+        # stat_mapping = {
+        #     'running': 'speed'
+        # }
+        # <<< 수정 끝 >>>
 
         # 각 목표 달성 여부 확인
         achieved = {}
@@ -174,9 +176,9 @@ class StorybookManager:
             if stat_name == "description":
                 continue
 
-            # 스탯 이름 매핑 적용
-            actual_stat_name = stat_mapping.get(stat_name, stat_name)
-            current_value = current_stats.get(actual_stat_name, 0)
+            # <<< 수정 시작: stat_mapping 로직 제거 >>>
+            current_value = current_stats.get(stat_name, 0)
+            # <<< 수정 끝 >>>
             is_achieved = current_value >= goal_value
 
             achieved[stat_name] = is_achieved
@@ -219,10 +221,10 @@ class StorybookManager:
 
         current_month = game_state.current_month
 
-        # 9월이면 엔딩
+        # 9월이면 엔딩 결정 스토리북으로 이동
         if current_month == 9:
             print("[StorybookManager] 9월 - 엔딩 스토리북으로 이동")
-            return "9_ending"
+            return "9_opening" # <<< 수정: "9_ending"이 아닌 "9_opening"으로 해야 엔딩 결정 로직이 실행됨
 
         # 9월 이상이면 None (게임 종료)
         if current_month >= 9:
@@ -243,79 +245,56 @@ class StorybookManager:
 
         return transition_id
 
+    # <<< 수정 시작: 엔딩 결정 함수를 최신 기획(스탯 총합 + 대회 결과)에 맞게 전면 수정 >>>
+    # 이유: 기존 로직은 오래된 스탯('power')과 잘못된 계산 방식(A/B/C 평균)을 사용하고 있어 치명적인 오류를 발생시킵니다.
     def determine_ending(self, game_state) -> dict:
         """
-        최종 엔딩 결정 (9월)
-
-        Logic:
-        1. 모든 스탯 80 이상 -> A 엔딩
-        2. 평균 스탯 60 이상 -> B 엔딩
-        3. 그 외 -> C 엔딩
-
-        Args:
-            game_state: GameState 객체
-
-        Returns:
-            dict: {
-                "ending_type": "A",
-                "name": "완벽한 성공",
-                "content": "...",
-                "image": "...",
-                "pages": [...]
-            }
+        최종 엔딩 결정 (스탯 총합 + 8월 대회 결과 플래그)
         """
-        stats = game_state.stats.to_dict()
+        stats = game_state.stats
+        flags = game_state.flags
 
-        # 엔딩 판정에 사용할 스탯 (친밀도 제외)
-        # 설정 파일의 엔딩 조건에 맞춰 스탯 선택
-        ending_stats = {
-            'stamina': stats.get('stamina', 0),
-            'power': stats.get('power', 0),
-            'speed': stats.get('speed', 0),  # running -> speed (GameState 기준)
-            'mental': stats.get('mental', 0)
+        # 1. 스탯 총합 계산 (친밀도, 멘탈 제외 4개 기술/신체 스탯, 최대 400점)
+        total_score = stats.batting + stats.speed + stats.defense + stats.stamina
+        
+        # 2. 8월 대회 결과 가져오기 (이 플래그는 8월 이벤트에서 설정되어야 함)
+        # 기본값은 '삼진(strikeout)'
+        tournament_result = flags.get('tournament_result', 'strikeout')
+
+        # 3. 스탯 총합에 따라 '스탯 범위' 결정
+        stat_range = 4 # 기본값은 최하위 범위
+        if total_score >= 320:   # 400점 만점에 320 이상 (S급 선수)
+            stat_range = 1
+        elif total_score >= 240: # 240 이상 (A급 선수)
+            stat_range = 2
+        elif total_score >= 150: # 150 이상 (B급 선수)
+            stat_range = 3
+        
+        # 4. 엔딩 매트릭스에 따라 엔딩 ID 결정
+        # 예: 범위 1 선수가 홈런을 치면 'A1' 엔딩
+        ending_map = {
+            1: {'homerun': 'A1', 'hit_steal': 'A2', 'hit': 'A3', 'strikeout': 'A4'},
+            2: {'homerun': 'B1', 'hit_steal': 'B2', 'hit': 'B3', 'strikeout': 'B4'},
+            3: {'homerun': 'C1', 'hit_steal': 'C2', 'hit': 'C3', 'strikeout': 'C4'},
+            4: {'homerun': 'D1', 'hit_steal': 'D2', 'hit': 'D3', 'strikeout': 'D4'}
         }
+        
+        ending_id = ending_map.get(stat_range, {}).get(tournament_result, 'D4')
 
-        # A 엔딩: 모든 스탯 80 이상
-        if all(value >= 80 for value in ending_stats.values()):
-            ending_type = "A"
-            print(f"[StorybookManager] 엔딩 결정: A (모든 스탯 80 이상)")
-        # B 엔딩: 평균 스탯 60 이상
-        elif sum(ending_stats.values()) / len(ending_stats) >= 60:
-            ending_type = "B"
-            print(f"[StorybookManager] 엔딩 결정: B (평균 스탯 60 이상)")
-        # C 엔딩: 그 외
-        else:
-            ending_type = "C"
-            print(f"[StorybookManager] 엔딩 결정: C (기타)")
+        # 5. 스페셜 엔딩 (메이저리그) 처리: 범위 1 + 홈런일 경우 5% 확률
+        if ending_id == 'A1' and random.random() < 0.05:
+            ending_id = 'S' # Special Ending
 
-        # 엔딩 데이터 가져오기
+        # 6. 엔딩 데이터 가져오기
         endings = self.config.get('endings', {})
-        ending_data = endings.get(ending_type, endings.get('C'))  # 없으면 C 엔딩
+        ending_data = endings.get(ending_id, endings.get('D4')) # ID가 없으면 최하위 엔딩(D4)으로 처리
 
-        if not ending_data:
-            print("[ERROR] 엔딩 데이터가 없습니다!")
-            return {
-                "ending_type": "C",
-                "title": "알 수 없는 엔딩",
-                "subtitle": "",
-                "pages": [],
-                "achievements": []
-            }
+        print(f"[엔딩 결정] 최종 스탯 총합: {total_score} (범위 {stat_range})")
+        print(f"[엔딩 결정] 대회 결과: {tournament_result}")
+        print(f"[엔딩 결정] 최종 엔딩 ID: {ending_id} - {ending_data.get('title')}")
 
-        # 엔딩 정보 반환
-        result = {
-            "ending_type": ending_type,
-            "title": ending_data.get('title', 'Unknown'),
-            "subtitle": ending_data.get('subtitle', ''),
-            "pages": ending_data.get('pages', []),
-            "achievements": ending_data.get('achievements', []),
-            "completion_action": ending_data.get('completion_action', 'game_end')
-        }
-
-        print(f"[StorybookManager] 엔딩: {ending_type} - {result['title']}")
-        print(f"[StorybookManager] 최종 스탯: {ending_stats}")
-
-        return result
+        return ending_data
+    # <<< 수정 끝 >>>
 
     def get_month_goals(self, month: int) -> dict:
         """
@@ -373,112 +352,70 @@ if __name__ == "__main__":
     실행 방법:
     python services/storybook_manager.py
     """
+    # <<< 수정 시작: 테스트 코드를 최신 스탯 시스템과 엔딩 로직에 맞게 전면 수정 >>>
     print("=" * 60)
     print("스토리북 관리자 테스트")
     print("=" * 60)
+
+    # GameState 임포트 (테스트를 위해)
+    try:
+        from game_state_manager import GameState
+    except ImportError:
+        print("[ERROR] game_state_manager.py를 찾을 수 없어 테스트를 진행할 수 없습니다.")
+        exit()
 
     # 매니저 초기화
     manager = StorybookManager()
     print()
 
-    # 테스트 1: 3월 오프닝 가져오기
+    # 테스트 1: 3월 오프닝 가져오기 (정상 작동 확인)
     print("\n[TEST 1] 3월 오프닝 스토리북 가져오기")
     print("-" * 60)
     storybook = manager.get_storybook("3_opening")
-    print(f"[OK] 스토리북 ID: {storybook['id']}")
-    print(f"[OK] 제목: {storybook['title']}")
-    print(f"[OK] 페이지 수: {len(storybook['pages'])}개")
+    print(f"[OK] 스토리북 ID: {storybook.get('id')}")
+    print(f"[OK] 제목: {storybook.get('title')}")
 
-    # 테스트 2: 목표 가져오기
-    print("\n[TEST 2] 3월 목표 가져오기")
-    print("-" * 60)
-    goals = manager.get_month_goals(3)
-    print(f"[OK] 목표 설명: {goals.get('description', 'N/A')}")
-    print(f"[OK] 친밀도 목표: {goals.get('intimacy', 0)}")
-    print(f"[OK] 체력 목표: {goals.get('stamina', 0)}")
-    print(f"[OK] 힘 목표: {goals.get('power', 0)}")
-    print(f"[OK] 주루 목표: {goals.get('running', 0)}")
-    print(f"[OK] 멘탈 목표: {goals.get('mental', 0)}")
-
-    # 테스트 3: 목표 달성 확인 (가상 게임 스테이트)
-    print("\n[TEST 3] 목표 달성 확인 (Mock GameState)")
+    # 테스트 2: 엔딩 결정 로직 테스트
+    print("\n[TEST 2] 엔딩 결정 로직 테스트")
     print("-" * 60)
 
-    # GameState 임포트 및 생성
-    from game_state_manager import GameState
+    # 시나리오 1: 최상위 스탯 + 홈런 -> 1라운드 지명(A1) 또는 메이저리그(S)
+    test_state_s = GameState(session_id="test_s_rank")
+    test_state_s.stats.batting = 90
+    test_state_s.stats.speed = 85
+    test_state_s.stats.defense = 80
+    test_state_s.stats.stamina = 75  # 총점 330 (범위 1)
+    test_state_s.flags['tournament_result'] = 'homerun'
+    
+    print("시나리오 1: 최상위 스탯 + 홈런")
+    ending_s = manager.determine_ending(test_state_s)
+    print(f"[OK] 결과: {ending_s.get('id')} - {ending_s.get('title')}\n")
 
-    test_state = GameState(session_id="test_user")
-    test_state.current_month = 3
-    test_state.stats.intimacy = 25
-    test_state.stats.stamina = 65
-    test_state.stats.power = 55
-    test_state.stats.speed = 50
-    test_state.stats.mental = 45
+    # 시나리오 2: 중간 스탯 + 안타 -> 드래프트 7라운드(B3)
+    test_state_b = GameState(session_id="test_b_rank")
+    test_state_b.stats.batting = 70
+    test_state_b.stats.speed = 65
+    test_state_b.stats.defense = 60
+    test_state_b.stats.stamina = 55  # 총점 250 (범위 2)
+    test_state_b.flags['tournament_result'] = 'hit'
+    
+    print("시나리오 2: 중간 스탯 + 안타")
+    ending_b = manager.determine_ending(test_state_b)
+    print(f"[OK] 결과: {ending_b.get('id')} - {ending_b.get('title')}\n")
 
-    all_achieved, goal_info = manager.check_goals_achieved(test_state)
-    print(f"[OK] 모든 목표 달성: {all_achieved}")
-    print(f"[OK] 세부 정보:")
-    for stat_name in goal_info['achieved'].keys():
-        achieved = "[OK]" if goal_info['achieved'][stat_name] else "[NO]"
-        print(f"  {achieved} {stat_name}: {goal_info['current'][stat_name]}/{goal_info['required'][stat_name]}")
+    # 시나리오 3: 최하위 스탯 + 삼진 -> 야구 포기(D4)
+    test_state_d = GameState(session_id="test_d_rank")
+    test_state_d.stats.batting = 30 # 초기값에서 거의 성장 못함
+    test_state_d.stats.speed = 40
+    test_state_d.stats.defense = 35
+    test_state_d.stats.stamina = 40 # 총점 145 (범위 4)
+    test_state_d.flags['tournament_result'] = 'strikeout'
 
-    # 테스트 4: 다음 스토리북 ID 결정
-    print("\n[TEST 4] 다음 스토리북 ID 결정")
-    print("-" * 60)
-
-    # 목표 달성 케이스
-    test_state.current_phase = "chat"
-    test_state.stats.intimacy = 25
-    test_state.stats.stamina = 65
-    test_state.stats.power = 55
-    test_state.stats.speed = 55
-    test_state.stats.mental = 45
-
-    next_id = manager.get_next_storybook_id(test_state)
-    print(f"[OK] 다음 스토리북 ID (목표 달성 시): {next_id}")
-
-    # 목표 미달성 케이스
-    test_state.stats.intimacy = 10
-    test_state.stats.stamina = 40
-
-    next_id = manager.get_next_storybook_id(test_state)
-    print(f"[OK] 다음 스토리북 ID (목표 미달성 시): {next_id}")
-
-    # 테스트 5: 엔딩 결정
-    print("\n[TEST 5] 엔딩 결정 테스트")
-    print("-" * 60)
-
-    # A 엔딩 (모든 스탯 80 이상)
-    test_state.current_month = 9
-    test_state.stats.intimacy = 95
-    test_state.stats.stamina = 90
-    test_state.stats.power = 85
-    test_state.stats.speed = 80
-    test_state.stats.mental = 85
-
-    ending_a = manager.determine_ending(test_state)
-    print(f"[OK] A 엔딩 테스트: {ending_a['ending_type']} - {ending_a['title']}")
-
-    # B 엔딩 (평균 60 이상)
-    test_state.stats.intimacy = 70
-    test_state.stats.stamina = 70
-    test_state.stats.power = 65
-    test_state.stats.speed = 60
-    test_state.stats.mental = 65
-
-    ending_b = manager.determine_ending(test_state)
-    print(f"[OK] B 엔딩 테스트: {ending_b['ending_type']} - {ending_b['title']}")
-
-    # C 엔딩 (그 외)
-    test_state.stats.intimacy = 40
-    test_state.stats.stamina = 50
-    test_state.stats.power = 45
-    test_state.stats.speed = 40
-    test_state.stats.mental = 40
-
-    ending_c = manager.determine_ending(test_state)
-    print(f"[OK] C 엔딩 테스트: {ending_c['ending_type']} - {ending_c['title']}")
-
+    print("시나리오 3: 최하위 스탯 + 삼진")
+    ending_d = manager.determine_ending(test_state_d)
+    print(f"[OK] 결과: {ending_d.get('id')} - {ending_d.get('title')}\n")
+    
     print("\n" + "=" * 60)
     print("[SUCCESS] 모든 테스트 완료!")
     print("=" * 60)
+    # <<< 수정 끝 >>>

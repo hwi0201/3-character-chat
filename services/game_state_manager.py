@@ -16,23 +16,26 @@ from pathlib import Path
 @dataclass
 class PlayerStats:
     """
-    선수 스탯
+    선수 스탯 (모든 스탯 0~100 범위)
 
     관계: 친밀도
     정신: 멘탈
-    신체: 체력, 힘, 주루능력
+    신체: 체력
+    기술: 타격, 주루, 수비
     """
-
     # 관계
-    intimacy: int = 0  # 친밀도 (0-100)
+    intimacy: int = 0      # 친밀도 (0-100)
 
-    # 정신
-    mental: int = 50  # 멘탈 (0-100)
+    # 정신 (기본적인 멘탈은 있으나 약점이 명확함)
+    mental: int = 30       # 멘탈
 
-    # 신체
-    stamina: int = 50  # 체력 (0-100)
-    power: int = 30    # 힘 (0-100, 폐급 스타트)
-    speed: int = 40    # 주루 능력 (0-100)
+    # 신체 (고교 선수로서의 기본 피지컬)
+    stamina: int = 40      # 체력
+
+    # 기술 (재능은 있으나 아직 미숙한 상태)
+    batting: int = 35      # 타격 능력
+    speed: int = 40        # 주루 능력
+    defense: int = 40      # 수비 능력
 
     def to_dict(self) -> dict:
         """딕셔너리로 변환"""
@@ -40,10 +43,7 @@ class PlayerStats:
 
     def apply_changes(self, changes: Dict[str, int]):
         """
-        스탯 변화 적용
-
-        Args:
-            changes: {"intimacy": +5, "mental": -10, ...}
+        스탯 변화 적용 (모든 스탯 0-100 범위로 클램핑)
         """
         for key, value in changes.items():
             if hasattr(self, key):
@@ -94,6 +94,16 @@ class GameState:
     # 이전 월 스탯 (전환 스토리북에서 변화량 표시용)
     previous_month_stats: Dict[str, int] = field(default_factory=dict)
 
+    # <<< 수정 시작: 현재 대화 모드를 저장할 플래그 추가 >>>
+    # 일반 대화 모드와 5월 이벤트의 '어머니 대화 모드'를 구분하기 위함입니다.
+    dialogue_mode: str = "normal"  # "normal" | "mother_chat"
+    # <<< 수정 끝 >>>
+    
+    # <<< 수정 시작: '다음 행동'을 지정하는 플래그 추가 >>>
+    # 이유: 8월 이벤트처럼 여러 단계로 진행되는 이벤트를 처리하기 위해, 현재 어떤 단계를 수행해야 하는지 저장해야 합니다.
+    next_action: Optional[str] = None  # 예: "submit_advice", "decide_steal"
+    # <<< 수정 끝 >>>
+
     def __post_init__(self):
         """초기화 후 기본값 설정"""
         # stats가 None이거나 PlayerStats 타입이 아니면 새로 생성
@@ -107,7 +117,7 @@ class GameState:
         # 필수 플래그 키 초기화 (없으면 추가)
         default_flags = {
             'backstory_revealed': False,  # 5월 집 방문 여부
-            'homerun_flag': False,  # 8월 홈런 달성
+            'tournament_result': 'strikeout', # <<< 수정: 8월 대회 결과를 저장할 플래그 (homerun, hit_steal, hit, strikeout)
             'steal_phobia_overcome': False,  # 도루 공포증 극복
         }
         for key, value in default_flags.items():
@@ -129,6 +139,8 @@ class GameState:
             'current_storybook_id': self.current_storybook_id,
             'storybook_completed': self.storybook_completed,
             'previous_month_stats': self.previous_month_stats,
+            'dialogue_mode': self.dialogue_mode,
+            'next_action': self.next_action
         }
 
     @classmethod
@@ -151,6 +163,10 @@ class GameState:
         """채팅 모드로 전환"""
         self.current_phase = "chat"
         self.current_storybook_id = None
+        # <<< 수정 시작: 채팅 모드로 전환될 때 next_action 초기화 >>>
+        # 이유: 이벤트가 아닌 일반 채팅으로 돌아올 때, 이전 이벤트 상태가 남아있는 것을 방지합니다.
+        self.next_action = None
+        # <<< 수정 끝 >>>
 
     def set_storybook_mode(self, storybook_id: str):
         """스토리북 모드로 전환"""
@@ -252,7 +268,7 @@ class GameStateManager:
 
     def get_stat_summary(self, session_id: str) -> str:
         """
-        현재 스탯 요약 텍스트 생성
+        현재 스탯 요약 텍스트 생성 (디버깅 또는 텍스트 기반 출력용)
 
         Args:
             session_id: 사용자 식별자
@@ -263,14 +279,16 @@ class GameStateManager:
         state = self.get_or_create(session_id)
         stats = state.stats
 
+        # <<< 수정: 새로운 스탯(batting, defense)을 포함하고, power는 제거
         return (
             "📊 현재 스탯\n"
             "━━━━━━━━━━━━━━━━━━\n"
             f"💖 친밀도: {stats.intimacy}/100\n"
             f"🧠 멘탈: {stats.mental}/100\n"
             f"💪 체력: {stats.stamina}/100\n"
-            f"💥 힘: {stats.power}/100\n"
-            f"🏃 주루: {stats.speed}/100"
+            f"🏏 타격: {stats.batting}/100\n"
+            f"🏃 주루: {stats.speed}/100\n"
+            f"⚾ 수비: {stats.defense}/100"
         )
 
     def get_game_info(self, session_id: str) -> str:

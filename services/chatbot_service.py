@@ -320,7 +320,7 @@ class ChatbotService:
         return response.data[0].embedding
     
     
-    def _search_similar(self, query: str, threshold: float = 0.45, top_k: int = 5):
+    def _search_similar(self, query: str, session_id: str, threshold: float = 0.45, top_k: int = 5):
         """
         RAG 검색: 유사한 문서 찾기 (핵심 메서드!)
 
@@ -377,54 +377,60 @@ class ChatbotService:
         - 검색된 문서 내용 확인
         """
         # ChromaDB 컬렉션이 없거나 비어있으면 None 반환
-        if self.collection is None:
-            print("[RAG] ChromaDB 컬렉션이 없습니다.")
+        if self.collection is None or self.collection.count() == 0:
+            print("[RAG] ChromaDB 컬렉션이 비어있거나 없습니다.")
             return (None, None, None)
-
-        if self.collection.count() == 0:
-            print("[RAG] ChromaDB 컬렉션이 비어있습니다. 문서를 추가해주세요.")
-            return (None, None, None)
+            
+        game_state = self.game_manager.get_or_create(session_id)
+        
+        # 검색 필터 설정
+        where_filter = None
+        if game_state.dialogue_mode == "mother_chat":
+            # '어머니 대화 모드'일 경우, source가 'mother_story'인 문서만 검색
+            # (※ 전제조건: mother_story.txt를 DB에 추가할 때, metadata로 {"source": "mother_story"}를 반드시 설정해야 합니다.)
+            where_filter = {"source": "mother_story"}
+            print("[RAG] '어머니 대화 모드' 활성화. 검색 범위를 'mother_story'로 제한합니다.")
 
         # 1. 쿼리 임베딩 생성
         query_embedding = self._create_embedding(query)
 
-        # 2. ChromaDB 검색
+        # 2. ChromaDB 검색 (where 필터 적용)
         results = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=top_k,
+            where=where_filter,
             include=["documents", "distances", "metadatas"]
         )
 
         # 3. 유사도 계산 및 필터링
+        if not results['documents'] or not results['documents'][0]:
+            print(f"[RAG] ✗ 검색 결과가 없습니다.")
+            return (None, None, None)
+            
         documents = results['documents'][0]
         distances = results['distances'][0]
-        metadatas = results['metadatas'][0] if results['metadatas'] else [{}] * len(documents)
+        metadatas = results['metadatas'][0] if results['metadatas'] and results['metadatas'][0] else [{}] * len(documents)
 
-        # 가장 유사한 문서 찾기
         best_document = None
         best_similarity = 0
         best_metadata = None
 
         for doc, dist, meta in zip(documents, distances, metadatas):
-            # 유사도 계산 (거리 → 유사도 변환)
             similarity = 1 / (1 + dist)
-
             print(f"[RAG] 문서: {doc[:50]}... | 거리: {dist:.4f} | 유사도: {similarity:.4f}")
 
-            # Threshold 이상인 것만 선택
             if similarity >= threshold and similarity > best_similarity:
                 best_document = doc
                 best_similarity = similarity
                 best_metadata = meta
 
-        # 4. 결과 반환
         if best_document:
             print(f"[RAG] ✓ 유사 문서 발견 (유사도: {best_similarity:.4f})")
-            print(f"[RAG] 문서 내용: {best_document[:100]}...")
             return (best_document, best_similarity, best_metadata)
         else:
             print(f"[RAG] ✗ Threshold({threshold}) 이상인 문서가 없습니다.")
             return (None, None, None)
+    # <<< 수정 끝 >>>
     
     
     def _build_prompt(self, context: str = None, session_id: str = None):
@@ -445,49 +451,51 @@ class ChatbotService:
         """
         from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-        # 1. 시스템 프롬프트 가져오기
-        system_prompt_config = self.config.get('system_prompt', {})
-        base_prompt = system_prompt_config.get('base', '당신은 친절한 AI 어시스턴트입니다.')
-        rules = system_prompt_config.get('rules', [])
-
-        # 시스템 메시지 구성
-        system_parts = [base_prompt]
-
-        # 규칙이 있으면 추가
-        if rules:
-            system_parts.append("\n[대화 규칙]")
-            for rule in rules:
-                system_parts.append(f"- {rule}")
-
-        # 2. 게임 상태 정보 추가
+        system_parts = []
+        
         if session_id:
             game_state = self.game_manager.get_or_create(session_id)
 
-            state_info = f"""
+            if game_state.dialogue_mode == "mother_chat":
+                # [어머니 대화 모드]
+                base_prompt = "당신은 아들 서강태를 매우 걱정하는 평범한 어머니입니다. 당신은 코치라는 직업에 대해 약간의 불신을 가지고 있습니다. 아들의 과거 상처에 대해 조심스럽게 이야기해주세요. 존댓말을 사용하세요."
+                system_parts.append(base_prompt)
+                system_parts.append("\n[중요 규칙]\n당신은 '??'으로 표시되며, 대답은 항상 '??: [대사]' 형식으로 시작해야 합니다.")
+            else:
+                # [일반 대화 모드] (서강태)
+                system_prompt_config = self.config.get('system_prompt', {})
+                base_prompt = system_prompt_config.get('base', '당신은 서강태입니다.')
+                rules = system_prompt_config.get('rules', [])
+                system_parts.append(base_prompt)
+                if rules:
+                    system_parts.append("\n[대화 규칙]")
+                    for rule in rules:
+                        system_parts.append(f"- {rule}")
+                
+                # AI에게 전달할 스탯 정보를 최신 버전으로 수정
+                state_info = f"""
 
 [현재 게임 상태]
 - 현재 시점: {game_state.current_month}월
 - 친밀도: {game_state.stats.intimacy}/100
 - 멘탈: {game_state.stats.mental}/100
 - 체력: {game_state.stats.stamina}/100
-- 힘: {game_state.stats.power}/100
+- 타격: {game_state.stats.batting}/100
 - 주루: {game_state.stats.speed}/100
+- 수비: {game_state.stats.defense}/100
 
 [캐릭터 행동 가이드]
 {self._get_behavior_guide(game_state)}
 """
-            system_parts.append(state_info)
+                system_parts.append(state_info)
 
-        # 3. RAG 컨텍스트 포함
+        # 3. RAG 검색 결과(context)가 있으면 프롬프트에 추가
         if context:
             system_parts.append(f"\n[참고 정보]\n{context}")
 
         system_message = "\n".join(system_parts)
 
-        # 3. ChatPromptTemplate 생성
-        # - ("system", ...): 시스템 메시지
-        # - MessagesPlaceholder("history"): 대화 히스토리가 여기에 삽입됨
-        # - ("human", "{input}"): 사용자 입력
+        # 4. 최종 ChatPromptTemplate 생성
         prompt = ChatPromptTemplate.from_messages([
             ("system", system_message),
             MessagesPlaceholder(variable_name="history"),
@@ -495,6 +503,7 @@ class ChatbotService:
         ])
 
         return prompt
+    # <<< 수정 끝 >>>
 
 
     def _get_behavior_guide(self, game_state) -> str:
@@ -582,7 +591,7 @@ class ChatbotService:
             # [1단계] 초기 메시지 처리
             if user_message.strip().lower() == "init":
                 bot_name = self.config.get('name', '챗봇')
-                greeting = f"안녕! 나는 {bot_name}이야. 무엇이든 물어봐!"
+                greeting = "왜 오셨어요. 알아서 훈련하겠다고 말씀드렸잖아요."
                 print(f"[BOT] (초기 인사) {greeting}")
                 print(f"{'='*50}\n")
                 return {
@@ -591,11 +600,15 @@ class ChatbotService:
                 }
 
             # [2단계] RAG 검색 수행
+            # <<< 수정 시작: _search_similar 함수 호출 시 session_id(username) 전달 >>>
+            # 수정된 _search_similar 함수가 대화 모드를 확인하려면 이 정보가 반드시 필요합니다.
             context, similarity, metadata = self._search_similar(
                 query=user_message,
+                session_id=username,
                 threshold=0.45,
                 top_k=5
             )
+            # <<< 수정 끝 >>>
 
             has_context = (context is not None)
 
@@ -697,6 +710,16 @@ class ChatbotService:
                 'image': None
             }
 
+            # <<< 수정 시작: _search_similar 함수에 session_id(username) 전달 >>>
+            # '어머니 대화 모드'인지 확인하기 위해 사용자 정보가 필요합니다.
+            context, similarity, metadata = self._search_similar(
+                query=user_message,
+                session_id=username, # <<< 수정: session_id 전달
+                threshold=0.45,
+                top_k=5
+            )
+            # <<< 수정 끝 >>>
+
             # 이벤트 정보 추가 (있을 경우)
             if event_info:
                 response_dict['event'] = event_info
@@ -761,7 +784,7 @@ class ChatbotService:
             # [1단계] 초기 메시지 처리
             if user_message.strip().lower() == "init":
                 bot_name = self.config.get('name', '챗봇')
-                greeting = f"안녕! 나는 {bot_name}이야. 무엇이든 물어봐!"
+                greeting = "왜 오셨어요. 알아서 훈련하겠다고 말씀드렸잖아요."
                 print(f"[BOT] (초기 인사) {greeting}")
                 print(f"{'='*50}\n")
 
@@ -776,12 +799,14 @@ class ChatbotService:
                 }
                 return
 
-            # [2단계] RAG 검색 수행
+            # <<< 수정 시작: _search_similar 함수에 session_id(username) 전달 >>>
             context, similarity, metadata = self._search_similar(
                 query=user_message,
+                session_id=username, # <<< 수정: session_id 전달
                 threshold=0.45,
                 top_k=5
             )
+            # <<< 수정 끝 >>>
 
             has_context = (context is not None)
 

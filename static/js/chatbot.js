@@ -36,7 +36,7 @@ const AppState = {
 const MONTH_INFO = {
   3: {
     title: "3월 - 첫 만남",
-    subtitle: "민석이와의 여정이 시작됩니다",
+    subtitle: "강태와의 여정이 시작됩니다",
     description: "드래프트까지 6개월, 신뢰를 쌓아가는 시간"
   },
   4: {
@@ -192,53 +192,63 @@ async function sendMessage(isInitial = false) {
       }
     }
 
-    // 스트리밍 완료 후 메타데이터 처리
-    if (metadata && metadata.debug) {
+    // <<< 수정 시작: 메타데이터 처리 로직을 수정하여 '선택지 있는 이벤트'를 분기 처리 >>>
+    // 5월 갈등 이벤트와 같이 사용자에게 선택지를 제공해야 하는 경우를 처리하기 위함입니다.
+    if (metadata) {
       const data = metadata;
 
-      console.group("🎮 게임 상태 업데이트");
-      console.log("📅 현재 시점:", `${data.debug.game_state.current_month}월 ${data.debug.game_state.current_day}일`);
-      console.log("🎯 드래프트까지:", `${data.debug.game_state.months_until_draft}개월`);
-      console.log("💖 친밀도 레벨:", data.debug.game_state.intimacy_level);
-
-      console.group("📊 스탯 변화");
-      if (Object.keys(data.debug.stat_changes.changes).length > 0) {
-        console.log("변화량:", data.debug.stat_changes.changes);
-        console.log("이유:", data.debug.stat_changes.reason);
-        console.table({
-          "이전": data.debug.stat_changes.old_stats,
-          "이후": data.debug.stat_changes.new_stats
-        });
+      // 1. 이벤트에 선택지(choices)가 있는지 확인
+      if (data.event && data.event.choices) {
+        // 선택지가 있으면 버튼을 표시하는 함수를 호출
+        showEventWithOptions(data.event);
       } else {
-        console.log("스탯 변화 없음");
+        // 2. 선택지가 없는 일반적인 경우, 기존 로직 실행
+        if (data.debug) {
+            console.group("🎮 게임 상태 업데이트");
+            console.log("📅 현재 시점:", `${data.debug.game_state.current_month}월 ${data.debug.game_state.current_day}일`);
+            console.log("🎯 드래프트까지:", `${data.debug.game_state.months_until_draft}개월`);
+            console.log("💖 친밀도 레벨:", data.debug.game_state.intimacy_level);
+
+            console.group("📊 스탯 변화");
+            if (Object.keys(data.debug.stat_changes.changes).length > 0) {
+              console.log("변화량:", data.debug.stat_changes.changes);
+              console.log("이유:", data.debug.stat_changes.reason);
+              console.table({
+                "이전": data.debug.stat_changes.old_stats,
+                "이후": data.debug.stat_changes.new_stats
+              });
+            } else {
+              console.log("스탯 변화 없음");
+            }
+            console.groupEnd();
+
+            if (data.debug.event_check.triggered) {
+              console.log("🎭 이벤트 발생:", data.debug.event_check.event_name);
+            }
+
+            if (data.debug.hint_provided) {
+              console.log("💡 힌트 제공됨");
+            }
+
+            console.log("💬 대화 횟수:", data.debug.conversation_count);
+            console.log("📜 이벤트 히스토리:", data.debug.event_history);
+            console.groupEnd();
+    
+            // 스탯 UI 업데이트
+            updateStatsUI(data.debug.game_state);
+        }
+        // 단순 이벤트 알림 표시
+        if (data.event) {
+          showEventNotification(data.event);
+        }
       }
-      console.groupEnd();
 
-      if (data.debug.event_check.triggered) {
-        console.log("🎭 이벤트 발생:", data.debug.event_check.event_name);
-      }
-
-      if (data.debug.hint_provided) {
-        console.log("💡 힌트 제공됨");
-      }
-
-      console.log("💬 대화 횟수:", data.debug.conversation_count);
-      console.log("📜 이벤트 히스토리:", data.debug.event_history);
-      console.groupEnd();
-
-      // 스탯 UI 업데이트
-      updateStatsUI(data.debug.game_state);
-
-      // 이벤트 알림 표시
-      if (data.event) {
-        showEventNotification(data.event);
-      }
-
-      // 힌트 표시
+      // 3. 힌트 표시는 이벤트 종류와 상관없이 항상 처리
       if (data.hint) {
         showHintNotification(data.hint);
       }
     }
+    // <<< 수정 끝 >>>
 
   } catch (error) {
     removeMessage(loadingId);
@@ -456,16 +466,21 @@ function updateMonthPage(month) {
  * @param {object} gameState - 게임 상태 객체
  */
 function updateStatsUI(gameState) {
-  if (!gameState || !gameState.stats) return;
+  if (!gameState || !gameState.stats) {
+    console.warn("[UI] 스탯 업데이트 실패: 게임 상태 정보 없음");
+    return;
+  }
 
   const stats = gameState.stats;
 
   // 스탯 바 업데이트
+  // 수정: 'power'를 제거하고, 새로운 스탯 'batting'과 'defense'를 추가합니다.
   updateStatBar("intimacy", stats.intimacy);
   updateStatBar("mental", stats.mental);
   updateStatBar("stamina", stats.stamina);
-  updateStatBar("power", stats.power);
+  updateStatBar("batting", stats.batting);
   updateStatBar("speed", stats.speed);
+  updateStatBar("defense", stats.defense);
 
   // 월 정보 업데이트 (current_month 또는 month 둘 다 처리)
   const monthElem = document.getElementById("current-month");
@@ -488,28 +503,31 @@ function updateStatsUI(gameState) {
 }
 
 function updateStatBar(statName, value) {
+  // 이유: 스탯 값을 '현재값/최대값' 형식으로 표시하고, 바의 너비와 색상을 업데이트합니다.
   const statValue = document.getElementById(`${statName}-value`);
   const statBar = document.getElementById(`${statName}-bar`);
 
-  if (statValue) {
-    statValue.textContent = value;
+  // 해당 ID를 가진 요소가 없으면 함수를 조용히 종료합니다.
+  if (!statValue || !statBar) {
+    return;
   }
 
-  if (statBar) {
-    statBar.style.width = `${value}%`;
+  // 수정: 모든 스탯의 최대값이 100이므로, 텍스트를 '값/100' 형식으로 업데이트합니다.
+  statValue.textContent = `${value}/100`;
+  statBar.style.width = `${value}%`;
 
-    // 색상 변경 (값에 따라)
-    if (value >= 80) {
-      statBar.style.backgroundColor = "#4CAF50"; // 녹색
-    } else if (value >= 50) {
-      statBar.style.backgroundColor = "#2196F3"; // 파란색
-    } else if (value >= 30) {
-      statBar.style.backgroundColor = "#FF9800"; // 주황색
-    } else {
-      statBar.style.backgroundColor = "#F44336"; // 빨간색
-    }
+  // 값에 따라 바 색상 변경
+  if (value >= 80) {
+    statBar.style.backgroundColor = "#4CAF50"; // 매우 높음 (녹색)
+  } else if (value >= 50) {
+    statBar.style.backgroundColor = "#2196F3"; // 보통 (파란색)
+  } else if (value >= 30) {
+    statBar.style.backgroundColor = "#FF9800"; // 낮음 (주황색)
+  } else {
+    statBar.style.backgroundColor = "#F44336"; // 매우 낮음 (빨간색)
   }
 }
+/* <<< 수정 끝 >>> */
 
 // 이벤트 알림 표시 (스탯 패널 아래)
 function showEventNotification(eventInfo) {
@@ -665,7 +683,7 @@ async function fetchMoments() {
         <div class="empty-state">
           <div class="empty-state-icon">📭</div>
           <p>아직 특별한 순간이 없습니다</p>
-          <p style="font-size: 0.9rem">민석이와 대화하며 추억을 만들어보세요!</p>
+          <p style="font-size: 0.9rem">강태와 대화하며 추억을 만들어보세요!</p>
         </div>
       `;
     }
@@ -832,7 +850,7 @@ function show3MonthGuide() {
       <h2>3월 - 시즌 준비</h2>
     </div>
     <div class="guide-content">
-      <p>드래프트까지 7개월! 민석이와 친밀도를 쌓고 기초 체력을 다지세요.</p>
+      <p>드래프트까지 7개월! 강태와 친밀도를 쌓고 기초 체력을 다지세요.</p>
       <div class="guide-goals">
         <h3>목표:</h3>
         <ul>
@@ -1291,3 +1309,79 @@ window.addEventListener("load", async () => {
   }
   // 온보딩이 표시된 경우, closeOnboarding()에서 3월 가이드와 스토리북 체크를 처리
 });
+
+/**
+ * 선택지가 있는 이벤트 메시지와 버튼을 채팅창에 표시하는 함수
+ * @param {object} eventInfo - 서버에서 받은 이벤트 정보 (choices 포함)
+ */
+function showEventWithOptions(eventInfo) {
+  const messageId = `msg-${AppState.counters.message++}`;
+  const messageElem = document.createElement("div");
+  messageElem.classList.add("message", "bot"); // 봇 메시지 스타일 적용
+  messageElem.id = messageId;
+
+  // 이벤트 설명 텍스트
+  const textElem = document.createElement('p');
+  textElem.textContent = eventInfo.trigger_message;
+  messageElem.appendChild(textElem);
+
+  // 선택지 버튼들을 담을 컨테이너
+  const optionsContainer = document.createElement('div');
+  optionsContainer.className = 'event-options-container'; // (CSS로 스타일 추가 가능)
+
+  // 각 선택지에 대한 버튼 생성
+  eventInfo.choices.forEach(choice => {
+    const button = document.createElement('button');
+    button.className = 'event-option-btn'; // (CSS로 스타일 추가 가능)
+    button.textContent = choice.text;
+    button.onclick = () => {
+      // 버튼 클릭 시, 선택 비활성화 및 서버로 결과 전송
+      handleEventChoice(eventInfo.event_key, choice.id, optionsContainer);
+    };
+    optionsContainer.appendChild(button);
+  });
+
+  messageElem.appendChild(optionsContainer);
+  
+  if (chatLog) {
+    chatLog.appendChild(messageElem);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+}
+
+/**
+ * 사용자가 선택한 이벤트 버튼의 결과를 서버로 전송하는 함수
+ * @param {string} eventKey - 이벤트의 고유 키 (예: "5월_갈등")
+ * @param {string} choiceId - 선택지의 고유 ID (예: "visit_home")
+ * @param {HTMLElement} optionsContainer - 비활성화할 버튼들의 부모 컨테이너
+ */
+async function handleEventChoice(eventKey, choiceId, optionsContainer) {
+  // 모든 버튼 비활성화 (중복 클릭 방지)
+  optionsContainer.querySelectorAll('button').forEach(btn => {
+    btn.disabled = true;
+    if (btn.textContent !== event.target.textContent) {
+      btn.style.opacity = '0.5';
+    }
+  });
+
+  // 서버로 선택 결과 전송 (이 부분은 백엔드 API가 필요합니다. - 다음 단계에서 만듭니다)
+  // 이 예제에서는 선택에 따른 결과를 프론트엔드에서 바로 처리합니다.
+
+  if (eventKey === '5월_갈등') {
+    if (choiceId === 'visit_home') {
+      // "집으로 찾아간다" 선택 -> 5_conflict_visit 스토리북 로드
+      appendMessageSync("guide", "당신은 강태의 집으로 향하기로 결심했다...");
+      await loadAndShowStorybook("5_conflict_visit");
+      
+      // <<< 백스토리 확인 플래그 및 친밀도 보너스 (서버에서 처리해야 하지만, 임시로 여기서 호출) >>>
+      // 실제로는 이 로직이 서버에 있어야 합니다.
+      // 이 예제에서는 fetchGameState()를 통해 서버의 변경된 상태를 가져옵니다.
+      // (서버 로직은 app.py 수정 부분에서 다룹니다)
+      
+    } else if (choiceId === 'wait') {
+      // "기다린다" 선택 -> 아무 일도 일어나지 않음
+      appendMessageSync("bot", "며칠 뒤, 강태가 아무 말 없이 훈련에 복귀했다. 당신은 아무것도 묻지 않았다.");
+    }
+  }
+}
+

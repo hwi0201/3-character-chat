@@ -17,7 +17,7 @@ class StatCalculator:
 
     사용자와 챗봇의 대화를 분석하여:
     1. 각 스탯에 미치는 영향 평가
-    2. 변화량 계산 (-10 ~ +10)
+    2. 변화량 계산
     3. 변화 이유 설명
     """
 
@@ -54,67 +54,76 @@ class StatCalculator:
             "intimacy": game_state.stats.intimacy,
             "mental": game_state.stats.mental,
             "stamina": game_state.stats.stamina,
-            "power": game_state.stats.power,
-            "speed": game_state.stats.speed
+            "batting": game_state.stats.batting,
+            "speed": game_state.stats.speed,
+            "defense": game_state.stats.defense
         }
 
         # LLM 프롬프트 구성
         prompt = ChatPromptTemplate.from_messages([
             ("system", """당신은 야구 선수 코칭 상황을 분석하는 전문가입니다.
 
-코치(사용자)와 선수(AI)의 대화를 분석하여, 다음 스탯에 미칠 영향을 평가하세요:
+코치(사용자)와 선수(AI)의 대화를 분석하여, 아래의 **구체적인 규칙**에 따라 스탯 변화량을 계산하세요:
 
-**스탯 종류 및 변화 범위:**
-- intimacy (친밀도): -10 ~ +10
-  * 공감, 격려, 개인적 관심 → 상승
-  * 무시, 비난, 강압적 태도 → 하락
+**[분석 지침]**
+- 일반적인 대화는 스탯 변화가 거의 없습니다.
+- 구체적인 훈련 지시나 깊은 감정적 교류가 있을 때만 큰 변화를 적용하세요.
+- 선수의 트라우마(도루 공포증)와 관련된 대화는 멘탈과 주루력에 큰 영향을 줍니다.
+- 현재 친밀도가 낮으면 긍정적 대화의 효과도 제한적일 수 있습니다
 
-- mental (멘탈): -10 ~ +10
-  * 자신감 부여, 성공 경험 강조 → 상승
-  * 비판, 실패 강조, 압박 → 하락
+**[스탯 상승 규칙]**
 
-- stamina (체력): -5 ~ +5
-  * 체력 훈련 언급, 휴식 권장 → 변화
-  * 과도한 훈련 → 하락
+1.  **친밀도(intimacy):**
+    *  `+3`: 코치가 선수의 상태를 묻거나 단순 격려. (예: '컨디션 어때?', '힘내자')
+    *  `+8`: 코치가 선수의 재능을 인정하거나 진심으로 걱정. (예: '너의 스윙은 최고야', '무슨 일 있었어?')
+    *  `+15`: 코치가 선수의 트라우마를 공감하고 위로. (예: '네 잘못이 아니야')
+    *  `-10`: 친밀도가 20 미만인데 트라우마를 강제로 캐물을 때.
 
-- power (힘): -5 ~ +5
-  * 근력 훈련 언급, 타격 연습 → 변화
+2.  **타격(batting):**
+    *  `+5`: '타격 훈련', '스윙 연습', '선구안', '타이밍' 등 일반적인 타격 관련 훈련을 지시할 때.
+    *  `+8`: '웨이트 트레이닝', '근력 운동' 등 파워를 중점적으로 키우는 훈련을 지시할 때.
 
-- speed (주루능력): -5 ~ +5
-  * 주루 훈련 언급, 도루 연습 → 변화
-  * 도루 관련 부정적 언급 → 하락 (트라우마 고려)
+3.  **주루력(speed):**
+    *  `+4`: '러닝', '달리기' 등 단순 주루 훈련을 지시할 때. (현재 친밀도가 20 미만이면 선수가 거부하므로 스탯 변화 없음)
+    *  `+10`: '도루 훈련', '슬라이딩 연습' 등 트라우마와 직결된 훈련을 *성공적으로* 지시할 때. (현재 친밀도가 50 이상일 때만 성공)
 
-**중요:**
-- 일반적인 대화는 스탯 변화가 적거나 없을 수 있습니다
-- 구체적인 훈련이나 감정적 교류가 있을 때만 큰 변화
-- 선수의 트라우마(도루 공포증)를 고려하세요
-- 현재 친밀도가 낮으면 긍정적 효과도 제한적입니다
+4.  **수비력(defense):**
+    *  `+6`: '수비 훈련', '캐치볼', '펑고' 등 수비 훈련을 지시할 때.
+
+5.  **체력(stamina):**
+    *  `+5`: '휴식', '스트레칭', '컨디션 조절' 등 휴식을 권장할 때.
+    *  `-3`: 대화에서 선수가 피곤함을 많이 호소할 때.
+
+6.  **멘탈(mental):**
+    *  `+4`: '명상', '휴식'을 지시할 때.
+    *  `+20`: '도루'에 대한 트라우마 극복을 돕는 대화에 성공했을 때. (현재 친밀도가 50 이상)
+    *  `-4`: 선수의 실수나 약점을 직접적으로 비난할 때.
+
 
 **응답 형식 (JSON):**
+규칙을 엄격하게 적용하여, 반드시 아래 JSON 형식으로만 응답하세요.
 {{
     "stat_changes": {{
         "intimacy": 0,
-        "mental": 0,
+        "batting": 0,
+        "speed": 0,
+        "defense": 0,
         "stamina": 0,
-        "power": 0,
-        "speed": 0
+        "mental": 0
     }},
-    "reason": "변화 이유를 한 문장으로 설명",
-    "analysis": "상세 분석 (선택)"
-}}
-
-변화가 없는 스탯은 0으로 설정하거나 생략 가능합니다."""),
+    "reason": "규칙에 기반한 변화 이유를 한 문장으로 설명"
+}}"""),
             ("human", """[현재 게임 상태]
 - 현재 시점: {current_month}월
 - 현재 스탯: {current_stats}
 
 [이번 대화]
 코치(사용자): {user_message}
-민석(AI): {bot_reply}
+강태(AI): {bot_reply}
 
 {context_info}
 
-이 대화가 민석의 스탯에 미치는 영향을 분석해주세요.""")
+이 대화가 강태의 스탯에 미치는 영향을 분석해주세요.""")
         ])
 
         chain = prompt | self.llm
@@ -144,32 +153,6 @@ class StatCalculator:
         except (json.JSONDecodeError, KeyError) as e:
             print(f"[WARNING] 스탯 분석 실패 ({type(e).__name__}): {e}")
             return ({}, "스탯 분석 실패")
-
-    def calculate_training_bonus(
-        self,
-        training_type: str,
-        game_state
-    ) -> Dict[str, int]:
-        """
-        훈련 타입별 스탯 보너스 계산
-
-        Args:
-            training_type: "체력", "근력", "주루", "타격" 등
-            game_state: 현재 게임 상태
-
-        Returns:
-            스탯 변화 딕셔너리
-        """
-
-        training_effects = {
-            "체력": {"stamina": 5, "mental": 2},
-            "근력": {"power": 5, "stamina": -2},
-            "주루": {"speed": 5, "mental": 3},  # 도루 극복 시 멘탈 상승
-            "타격": {"power": 3, "mental": 2},
-            "멘탈": {"mental": 5, "intimacy": 2}
-        }
-
-        return training_effects.get(training_type, {})
 
     def get_intimacy_level(self, intimacy: int) -> str:
         """
