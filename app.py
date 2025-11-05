@@ -712,7 +712,8 @@ def api_complete_storybook():
         game_state.mark_storybook_completed(storybook_id)
 
         # 스토리북 정보 가져오기
-        storybook = get_storybook_manager().get_storybook(storybook_id)
+        storybook_manager = get_storybook_manager()
+        storybook = storybook_manager.get_storybook(storybook_id)
         completion_action = storybook.get('completion_action', {})
 
         # completion_action이 문자열인지 딕셔너리인지 확인 (하위 호환성)
@@ -766,6 +767,137 @@ def api_complete_storybook():
             'success': False,
             'error': '서버 오류가 발생했습니다.'
         }), 500
+
+
+# ============================================================================
+# 월별 시스템 메시지 (채팅 시작 시 상황 설명)
+# ============================================================================
+
+def get_month_system_message(storybook_id: str) -> str:
+    """
+    스토리북 완료 후 채팅 시작 시 전송할 시스템 메시지
+    (사용자에게 보이지 않음, 챗봇에게만 전달되어 상황 인지)
+
+    Args:
+        storybook_id: 완료된 스토리북 ID
+
+    Returns:
+        시스템 메시지 문자열 (상황 설명만, 태도는 기존 로직 사용)
+    """
+    messages = {
+        # === 월별 시작 ===
+        "3_opening": "3월이 시작되었습니다. 새로운 코치를 만난 첫 달입니다.",
+
+        "4_opening": "4월이 시작되었습니다. 기초 훈련을 시작할 시기입니다.",
+
+        # 5월 특수: 트라우마 공개 직후
+        "5_main_event": """5월입니다.
+방금 전 어머니가 코치님에게 당신의 과거를 이야기했습니다.
+중학교 때 전 코치에게 배신당한 일, 부상을 악화시킨 일, 약속을 어긴 일.
+집에 들어와서 두 사람이 대화한 것을 알게 되었습니다.""",
+
+        "6_opening": "6월이 시작되었습니다. 5월의 힘든 시간을 극복하고, 드래프트까지 절반이 지났습니다.",
+
+        "7_opening": "7월이 시작되었습니다. 무더운 여름, 드래프트까지 2개월 남았습니다.",
+
+        # === 8월 특수 시퀀스 ===
+        # 8월 시작: 타석 직전
+        "8_opening": """8월, 대통령배 결승전입니다.
+9회 말 2사 만루, 3:4로 뒤진 상황. 다음 타석은 당신입니다.
+이전 타석까지 계속 삼진만 당했습니다.
+더그아웃에 앉아 배트를 쥐고 있습니다. 손이 떨립니다.""",
+
+        # 타석 결과 1: 홈런
+        "8_result_homerun": """방금 홈런을 쳤습니다!
+역전 만루 홈런으로 팀이 기적적인 승리를 거뒀습니다.
+관중들의 환호 소리가 귀를 울립니다.""",
+
+        # 타석 결과 2: 삼진
+        "8_result_strikeout": """방금 삼진을 당했습니다.
+팀이 패배했습니다. 더그아웃으로 돌아왔습니다.
+아쉬움과 죄책감이 밀려옵니다.""",
+
+        # 도루 결과 1: 성공
+        "8_steal_success": """방금 도루에 성공했습니다!
+과거의 트라우마를 극복하고, 주루 플레이까지 완벽하게 해냈습니다.
+코치님 덕분입니다.""",
+
+        # 도루 결과 2: 실패
+        "8_steal_fail": """도루를 시도하지 못했습니다.
+과거의 기억이 발을 묶었습니다.
+경기는 무승부로 끝났습니다. 아쉬움이 남습니다.""",
+
+        # === 9월 ===
+        "9_opening": "9월, 드래프트 날입니다. 6개월간 코치님과 함께한 노력이 결실을 맺을 순간입니다."
+    }
+
+    return messages.get(storybook_id, "")
+
+
+# ============================================================================
+# 월 시작 API (시스템 메시지 자동 전송)
+# ============================================================================
+
+@app.route('/api/chat/month-start', methods=['POST'])
+def api_month_start():
+    """
+    새 월 시작 시 시스템 메시지 자동 전송 및 챗봇 응답 생성
+
+    Request:
+        {
+            "username": "사용자",
+            "storybook_id": "5_main_event"
+        }
+
+    Response:
+        {
+            "success": True,
+            "system_message": "시스템 메시지 내용",
+            "bot_response": "챗봇의 첫 응답"
+        }
+    """
+    try:
+        data = request.get_json()
+        username = data.get('username', '사용자')
+        storybook_id = data.get('storybook_id', '')
+
+        from services import get_chatbot_service
+        chatbot = get_chatbot_service()
+        game_state = chatbot.game_manager.get_or_create(username)
+
+        # 월별 시스템 메시지 생성
+        system_message = get_month_system_message(storybook_id)
+
+        if not system_message:
+            # 시스템 메시지가 없으면 그냥 성공 반환 (채팅 화면만 초기화)
+            return jsonify({
+                'success': True,
+                'system_message': None,
+                'bot_response': None
+            })
+
+        # 시스템 메시지로 챗봇 응답 생성
+        response = chatbot.generate_response(
+            user_message=system_message,
+            username=username
+        )
+
+        return jsonify({
+            'success': True,
+            'system_message': system_message,
+            'bot_response': response.get('reply', ''),
+            'game_state': {
+                'current_month': game_state.current_month,
+                'current_phase': game_state.current_phase,
+                'stats': game_state.stats.to_dict()
+            }
+        })
+
+    except Exception as e:
+        print(f"[ERROR] 월 시작 API 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 # 헬스체크 엔드포인트 (Vercel용)

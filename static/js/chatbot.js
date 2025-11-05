@@ -26,7 +26,15 @@ const AppState = {
   },
 
   // 게임 상태 (서버에서 받아옴)
-  game: null
+  game: null,
+
+  training: {
+    isAvailable: false,
+    isOpen: false,
+    isSubmitting: false,
+    intensity: 60,
+    focuses: ['batting']
+  }
 };
 
 // ============================================================================
@@ -71,6 +79,9 @@ const MONTH_INFO = {
   }
 };
 
+
+const TRAINING_MONTHS = new Set([4, 6, 7]);
+
 // ============================================================================
 // DOM 요소
 // ============================================================================
@@ -85,6 +96,189 @@ const sendBtn = document.getElementById("send-btn");
 const monthImageContainer = document.getElementById("month-image-container");
 const monthTitle = document.getElementById("month-title");
 const chatBookLeft = document.querySelector(".chat-book-left");
+
+const trainingButton = document.getElementById("training-button");
+const trainingModal = document.getElementById("training-modal");
+const trainingIntensityInput = document.getElementById("training-intensity");
+const trainingIntensityLabel = document.getElementById("training-intensity-label");
+const trainingSubmitBtn = document.getElementById("training-submit");
+const trainingCloseBtn = document.getElementById("training-close");
+
+
+const TRAINING_FOCUS_LABELS = {
+  batting: "타격",
+  speed: "주루",
+  defense: "수비",
+};
+
+function getTrainingFocusInputs() {
+  return document.querySelectorAll('input[name="training-focus"]');
+}
+
+function describeTrainingIntensity(value) {
+  const val = Number(value);
+  if (val <= 20) return "회복 세션";
+  if (val <= 40) return "가벼운 훈련";
+  if (val <= 70) return "기본 훈련";
+  if (val <= 85) return "집중 훈련";
+  return "고강도 훈련";
+}
+
+function updateTrainingIntensityLabel(value) {
+  if (!trainingIntensityLabel) return;
+  const label = describeTrainingIntensity(value);
+  trainingIntensityLabel.textContent = "강도 " + value + " - " + label;
+}
+
+function getCurrentMonthValue() {
+  if (AppState.game && typeof AppState.game.current_month === 'number') {
+    return AppState.game.current_month;
+  }
+  const monthElem = document.getElementById('current-month');
+  if (!monthElem) return null;
+  const parsed = parseInt(monthElem.textContent, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function refreshTrainingAvailability() {
+  if (!trainingButton) return;
+  const month = getCurrentMonthValue();
+  const available = typeof month === 'number' && TRAINING_MONTHS.has(month) && !AppState.storybook.isActive;
+  AppState.training.isAvailable = available;
+  trainingButton.style.display = available ? 'block' : 'none';
+  trainingButton.disabled = !available;
+}
+
+function openTrainingModal() {
+  if (!AppState.training.isAvailable || !trainingModal) {
+    showError('지금은 훈련을 진행할 수 없습니다.');
+    return;
+  }
+  AppState.training.isOpen = true;
+  trainingModal.classList.add('open');
+  updateTrainingIntensityLabel(AppState.training.intensity);
+}
+
+function closeTrainingModal() {
+  if (!trainingModal) return;
+  AppState.training.isOpen = false;
+  trainingModal.classList.remove('open');
+}
+
+function getSelectedTrainingFocuses() {
+  return Array.from(getTrainingFocusInputs())
+    .filter((input) => input.checked)
+    .map((input) => input.value);
+}
+
+function formatTrainingChanges(statChanges, staminaChange) {
+  const parts = [];
+  if (statChanges) {
+    Object.entries(statChanges).forEach(([key, delta]) => {
+      const label = TRAINING_FOCUS_LABELS[key] || key;
+      parts.push(label + ' ' + (delta > 0 ? '+' : '') + delta);
+    });
+  }
+  if (typeof staminaChange === 'number' && staminaChange !== 0) {
+    parts.push('체력 ' + (staminaChange > 0 ? '+' : '') + staminaChange);
+  }
+  return parts.join(', ');
+}
+
+async function submitTraining(event) {
+  if (event) {
+    event.preventDefault();
+  }
+  if (!AppState.training.isAvailable || AppState.training.isSubmitting) {
+    return;
+  }
+
+  const focuses = getSelectedTrainingFocuses();
+  if (focuses.length === 0) {
+    showError('훈련할 항목을 최소 하나 선택해 주세요.');
+    return;
+  }
+
+  AppState.training.focuses = focuses;
+  AppState.training.isSubmitting = true;
+
+  try {
+    const intensityValue = trainingIntensityInput ? Number(trainingIntensityInput.value) : AppState.training.intensity;
+    if (!Number.isNaN(intensityValue)) {
+      AppState.training.intensity = intensityValue;
+    }
+
+    const payload = {
+      username,
+      intensity: AppState.training.intensity,
+      focuses,
+    };
+
+    const response = await fetch('/api/training', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || '훈련 요청이 실패했습니다.');
+    }
+
+    closeTrainingModal();
+
+    const changeText = formatTrainingChanges(data.stat_changes, data.stamina_change);
+    const message = ["<strong>" + data.intensity_label + "</strong>", data.summary];
+    if (changeText) {
+      message.push('변화: ' + changeText);
+    }
+    appendMessageSync('guide', message.join('<br>'));
+
+    await fetchGameState();
+  } catch (error) {
+    showError('훈련 처리 중 오류가 발생했습니다.', error);
+    console.error('[TRAINING] Error', error);
+  } finally {
+    AppState.training.isSubmitting = false;
+  }
+}
+
+function initializeTrainingUI() {
+  if (!trainingButton) {
+    return;
+  }
+
+  trainingButton.addEventListener('click', openTrainingModal);
+
+  if (trainingCloseBtn) {
+    trainingCloseBtn.addEventListener('click', closeTrainingModal);
+  }
+
+  if (trainingIntensityInput) {
+    trainingIntensityInput.value = AppState.training.intensity;
+    updateTrainingIntensityLabel(AppState.training.intensity);
+    trainingIntensityInput.addEventListener('input', (event) => {
+      const nextValue = Number(event.target.value);
+      AppState.training.intensity = nextValue;
+      updateTrainingIntensityLabel(nextValue);
+    });
+  }
+
+  if (trainingSubmitBtn) {
+    trainingSubmitBtn.addEventListener('click', submitTraining);
+  }
+
+  if (trainingModal) {
+    trainingModal.addEventListener('click', (event) => {
+      if (event.target === trainingModal) {
+        closeTrainingModal();
+      }
+    });
+  }
+
+  refreshTrainingAvailability();
+}
 
 // ============================================================================
 // 오류 처리 유틸리티
@@ -345,6 +539,81 @@ function removeMessage(messageId) {
   }
 }
 
+// ============================================================================
+// 채팅 화면 관리 함수
+// ============================================================================
+
+/**
+ * 프론트엔드 채팅 화면 초기화 (시각적으로만)
+ * 주의: 백엔드의 실제 대화 기록(챗봇이 보는 기록)은 유지됨
+ */
+function clearChatDisplay() {
+  if (chatLog) {
+    chatLog.innerHTML = '';
+    AppState.counters.message = 0;
+    console.log("[Chat] 채팅 화면 초기화 완료 (백엔드 기록은 유지)");
+  }
+}
+
+/**
+ * 새 월 시작 처리
+ * 1. 채팅 화면 초기화
+ * 2. 시스템 메시지 자동 전송
+ * 3. 챗봇 응답 표시
+ *
+ * @param {string} storybookId - 완료된 스토리북 ID
+ */
+async function startNewMonth(storybookId) {
+  console.log(`[Month] 월 시작 처리: ${storybookId}`);
+
+  // 1. 채팅 화면 초기화
+  clearChatDisplay();
+
+  // 2. 서버에 월 시작 알림 (시스템 메시지 자동 전송)
+  try {
+    const response = await fetch('/api/chat/month-start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: username,
+        storybook_id: storybookId
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // 시스템 메시지는 숨김 (DOM에 추가하되 display:none)
+      if (data.system_message) {
+        const messageId = `msg-${AppState.counters.message++}`;
+        const messageElem = document.createElement("div");
+        messageElem.classList.add("message", "system", "hidden");
+        messageElem.id = messageId;
+        messageElem.textContent = data.system_message;
+        messageElem.style.display = 'none'; // 완전히 숨김
+
+        if (chatLog) {
+          chatLog.appendChild(messageElem);
+        }
+
+        console.log("[Month] 시스템 메시지 전송 (숨김):", data.system_message.substring(0, 50) + "...");
+      }
+
+      // 챗봇의 첫 응답만 화면에 표시
+      if (data.bot_response) {
+        appendMessageSync('bot', data.bot_response);
+        console.log("[Month] 챗봇 첫 응답 표시");
+      }
+
+      console.log("[Month] 월 시작 처리 완료");
+    } else {
+      console.error("[ERROR] 월 시작 처리 실패:", data.error);
+    }
+  } catch (error) {
+    console.error("[ERROR] 월 시작 처리 실패:", error);
+  }
+}
+
 // 엔터키로 전송
 if (userMessageInput) {
   userMessageInput.addEventListener("keypress", (event) => {
@@ -491,6 +760,8 @@ function updateStatsUI(gameState) {
   if (month !== undefined) {
     updateMonthPage(month);
   }
+
+  refreshTrainingAvailability();
 
   // 친밀도 레벨 업데이트
   const intimacyLevelElem = document.getElementById("intimacy-level");
@@ -899,6 +1170,7 @@ async function loadAndShowStorybook(storybookId) {
       AppState.storybook.current = data.storybook;
       AppState.storybook.currentPage = 0;
       AppState.storybook.isActive = true;
+      refreshTrainingAvailability();
 
       console.log('[스토리북] 데이터 저장 완료:', {
         title: AppState.storybook.current.title,
@@ -964,6 +1236,7 @@ function hideStorybookInBook() {
   if (chatContent) chatContent.classList.remove('hidden');
 
   AppState.storybook.isActive = false;
+  refreshTrainingAvailability();
   console.log('[스토리북] 모드 비활성화');
 }
 
@@ -1108,12 +1381,14 @@ async function storybookStartFromBook() {
  */
 async function completeStorybook() {
   try {
+    const storybookId = AppState.storybook.current.id; // 스토리북 ID 저장
+
     const response = await fetch('/api/storybook/complete', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         username: username,
-        storybook_id: AppState.storybook.current.id
+        storybook_id: storybookId
       })
     });
 
@@ -1124,8 +1399,8 @@ async function completeStorybook() {
 
       // 다음 액션에 따라 분기
       if (data.next_action === 'start_chat_mode') {
-        // 채팅 모드로 전환
-        await transitionToChatMode();
+        // 채팅 모드로 전환 (완료된 스토리북 ID 전달)
+        await transitionToChatMode(storybookId);
 
       } else if (data.next_action === 'show_next_storybook') {
         // 다음 스토리북 표시
@@ -1160,12 +1435,18 @@ async function completeStorybook() {
 
 /**
  * 채팅 모드로 부드럽게 전환 (책 안에서)
+ * @param {string} storybookId - 완료된 스토리북 ID (시스템 메시지용)
  */
-async function transitionToChatMode() {
-  console.log('[전환] 채팅 모드로 전환 시작');
+async function transitionToChatMode(storybookId = null) {
+  console.log('[전환] 채팅 모드로 전환 시작, 스토리북 ID:', storybookId);
 
   // 스토리북 UI 숨기기
   hideStorybookInBook();
+
+  // 월 시작 처리 (채팅 화면 초기화 + 시스템 메시지)
+  if (storybookId) {
+    await startNewMonth(storybookId);
+  }
 
   // 게임 상태 새로고침
   await fetchGameState();
@@ -1197,6 +1478,7 @@ async function transitionToEnding(endingStorybook) {
   AppState.storybook.current = endingStorybook;
   AppState.storybook.currentPage = 0;
   AppState.storybook.isActive = true;
+      refreshTrainingAvailability();
 
   // 스토리북 모드로 전환 및 렌더링
   showStorybookInBook();
@@ -1281,6 +1563,7 @@ async function checkInitialStorybook() {
 // 페이지 로드 시 초기화
 window.addEventListener("load", async () => {
   console.log("페이지 로드 완료");
+  initializeTrainingUI();
 
   // 초기 월 설정 (기본값: 3월)
   updateMonthPage(3);
@@ -1346,34 +1629,5 @@ function showEventWithOptions(eventInfo) {
   }
 }
 
-/**
- * 사용자가 선택한 이벤트 버튼을 처리하는 함수
- * @param {Event} event - 클릭 이벤트 객체
- * @param {string} eventKey - 이벤트의 고유 키 (예: "5월_갈등")
- * @param {string} choiceId - 선택지의 고유 ID (예: "visit_home")
- * @param {HTMLElement} optionsContainer - 비활성화할 버튼들의 부모 컨테이너
- */
-async function handleEventChoice(event, eventKey, choiceId, optionsContainer) {
-  // 모든 버튼 비활성화 (중복 클릭 방지)
-  optionsContainer.querySelectorAll('button').forEach(btn => {
-    btn.disabled = true;
-    if (btn !== event.target) {
-      btn.style.opacity = '0.5';
-    }
-  });
-
-  // 5월 갈등 이벤트 분기 처리
-  if (eventKey === '5월_갈등') {
-    if (choiceId === 'visit_home') {
-      // "집으로 찾아간다" 선택 -> 5_conflict_visit 스토리북 로드
-      appendMessageSync("guide", "당신은 강태의 집으로 향하기로 결심했다...");
-      await loadAndShowStorybook("5_conflict_visit");
-      
-    } else if (choiceId === 'wait') {
-      // "기다린다" 선택 -> 5_conflict_wait 스토리북 로드
-      appendMessageSync("guide", "당신은 강태가 스스로 돌아오길 기다리기로 했다...");
-      await loadAndShowStorybook("5_conflict_wait");
-    }
-  }
-}
+// 5월 이벤트 선택지 시스템 제거됨 - flags로 단순화됨
 
