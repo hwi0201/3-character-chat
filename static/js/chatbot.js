@@ -68,7 +68,7 @@ const MONTH_INFO = {
     description: "체력과 멘탈을 끌어올립니다"
   },
   8: {
-    title: "8월 - 막바지 준비",
+    title: "8월 - 결전의 날",
     subtitle: "마지막 스퍼트",
     description: "드래프트가 한 달 앞으로 다가왔습니다"
   },
