@@ -45,9 +45,9 @@ const MONTH_INFO = {
     description: "탄탄한 기본기로 미래를 준비합니다"
   },
   5: {
-    title: "5월 - 실전 훈련",
-    subtitle: "진짜 실력을 보여줄 시간",
-    description: "실전 기술을 연마하며 성장합니다"
+    title: "5월 - 보이지 않는 상처",
+    subtitle: "강태의 과거와 마주하다",
+    description: "강태를 이해하고 보듬으며 성장시킵니다"
   },
   6: {
     title: "6월 - 중반전",
@@ -192,8 +192,6 @@ async function sendMessage(isInitial = false) {
       }
     }
 
-    // <<< 수정 시작: 메타데이터 처리 로직을 수정하여 '선택지 있는 이벤트'를 분기 처리 >>>
-    // 5월 갈등 이벤트와 같이 사용자에게 선택지를 제공해야 하는 경우를 처리하기 위함입니다.
     if (metadata) {
       const data = metadata;
 
@@ -248,7 +246,6 @@ async function sendMessage(isInitial = false) {
         showHintNotification(data.hint);
       }
     }
-    // <<< 수정 끝 >>>
 
   } catch (error) {
     removeMessage(loadingId);
@@ -1317,7 +1314,7 @@ window.addEventListener("load", async () => {
 function showEventWithOptions(eventInfo) {
   const messageId = `msg-${AppState.counters.message++}`;
   const messageElem = document.createElement("div");
-  messageElem.classList.add("message", "bot"); // 봇 메시지 스타일 적용
+  messageElem.classList.add("message", "bot", "event-choices"); // 봇 메시지 스타일 + 커스텀 클래스
   messageElem.id = messageId;
 
   // 이벤트 설명 텍스트
@@ -1327,16 +1324,16 @@ function showEventWithOptions(eventInfo) {
 
   // 선택지 버튼들을 담을 컨테이너
   const optionsContainer = document.createElement('div');
-  optionsContainer.className = 'event-options-container'; // (CSS로 스타일 추가 가능)
+  optionsContainer.className = 'event-options-container';
 
   // 각 선택지에 대한 버튼 생성
   eventInfo.choices.forEach(choice => {
     const button = document.createElement('button');
-    button.className = 'event-option-btn'; // (CSS로 스타일 추가 가능)
+    button.className = 'event-option-btn';
     button.textContent = choice.text;
-    button.onclick = () => {
-      // 버튼 클릭 시, 선택 비활성화 및 서버로 결과 전송
-      handleEventChoice(eventInfo.event_key, choice.id, optionsContainer);
+    button.onclick = (event) => {
+      // 버튼 클릭 시, 선택 비활성화 및 스토리북 로드
+      handleEventChoice(event, eventInfo.event_key, choice.id, optionsContainer);
     };
     optionsContainer.appendChild(button);
   });
@@ -1350,37 +1347,32 @@ function showEventWithOptions(eventInfo) {
 }
 
 /**
- * 사용자가 선택한 이벤트 버튼의 결과를 서버로 전송하는 함수
+ * 사용자가 선택한 이벤트 버튼을 처리하는 함수
+ * @param {Event} event - 클릭 이벤트 객체
  * @param {string} eventKey - 이벤트의 고유 키 (예: "5월_갈등")
  * @param {string} choiceId - 선택지의 고유 ID (예: "visit_home")
  * @param {HTMLElement} optionsContainer - 비활성화할 버튼들의 부모 컨테이너
  */
-async function handleEventChoice(eventKey, choiceId, optionsContainer) {
+async function handleEventChoice(event, eventKey, choiceId, optionsContainer) {
   // 모든 버튼 비활성화 (중복 클릭 방지)
   optionsContainer.querySelectorAll('button').forEach(btn => {
     btn.disabled = true;
-    if (btn.textContent !== event.target.textContent) {
+    if (btn !== event.target) {
       btn.style.opacity = '0.5';
     }
   });
 
-  // 서버로 선택 결과 전송 (이 부분은 백엔드 API가 필요합니다. - 다음 단계에서 만듭니다)
-  // 이 예제에서는 선택에 따른 결과를 프론트엔드에서 바로 처리합니다.
-
+  // 5월 갈등 이벤트 분기 처리
   if (eventKey === '5월_갈등') {
     if (choiceId === 'visit_home') {
       // "집으로 찾아간다" 선택 -> 5_conflict_visit 스토리북 로드
       appendMessageSync("guide", "당신은 강태의 집으로 향하기로 결심했다...");
       await loadAndShowStorybook("5_conflict_visit");
       
-      // <<< 백스토리 확인 플래그 및 친밀도 보너스 (서버에서 처리해야 하지만, 임시로 여기서 호출) >>>
-      // 실제로는 이 로직이 서버에 있어야 합니다.
-      // 이 예제에서는 fetchGameState()를 통해 서버의 변경된 상태를 가져옵니다.
-      // (서버 로직은 app.py 수정 부분에서 다룹니다)
-      
     } else if (choiceId === 'wait') {
-      // "기다린다" 선택 -> 아무 일도 일어나지 않음
-      appendMessageSync("bot", "며칠 뒤, 강태가 아무 말 없이 훈련에 복귀했다. 당신은 아무것도 묻지 않았다.");
+      // "기다린다" 선택 -> 5_conflict_wait 스토리북 로드
+      appendMessageSync("guide", "당신은 강태가 스스로 돌아오길 기다리기로 했다...");
+      await loadAndShowStorybook("5_conflict_wait");
     }
   }
 }

@@ -448,43 +448,7 @@ def api_get_moments():
     except Exception as e:
         print(f"[ERROR] 특별한 순간 조회 실패: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
-    
-# <<< 수정 시작: '어머니 대화 모드'로 전환하는 새로운 API 엔드포인트 추가 >>>
-# 이유: 5월 이벤트에서 사용자가 '집으로 찾아간다'를 선택했을 때,
-#      프론트엔드(chatbot.js)가 이 API를 호출하여 게임 상태를 변경하도록 요청해야 합니다.
-@app.route('/api/game/set-dialogue-mode', methods=['POST'])
-def set_dialogue_mode():
-    """특정 대화 모드로 진입/종료하는 API"""
-    try:
-        data = request.get_json()
-        username = data.get('username')
-        mode = data.get('mode', 'normal')
 
-        if not username:
-            return jsonify({'success': False, 'error': 'Username is required'}), 400
-
-        from services import get_chatbot_service
-        chatbot = get_chatbot_service()
-        game_state = chatbot.game_manager.get_or_create(username)
-        
-        # 게임 상태의 대화 모드를 변경하고 저장
-        game_state.dialogue_mode = mode
-        chatbot.game_manager.save(username)
-        
-        print(f"[Mode Change] {username}님의 대화 모드가 '{mode}'로 변경되었습니다.")
-        
-        # '어머니 대화 모드' 시작 시, 어머니의 첫 대사를 반환
-        if mode == "mother_chat":
-            return jsonify({
-                'success': True, 
-                'initial_message': "......누구세요?"
-            })
-        
-        return jsonify({'success': True})
-    except Exception as e:
-        print(f"[ERROR] 대화 모드 변경 실패: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-# <<< 수정 끝 >>>    
 
 # ============================================================================
 # 스토리북 관련 API 엔드포인트
@@ -710,13 +674,7 @@ def api_complete_storybook():
             'message': action_message
         }
 
-        # 액션 타입에 따라 처리
-        if storybook_id == '8_opening':
-            game_state.next_action = "submit_advice"
-            response_data['next_action'] = 'await_user_input' # 프론트엔드에 사용자 입력을 기다리라고 알림
-            print("[Game Event] '조언 제출 대기' 모드로 전환됩니다.")
-        
-        elif action_type == 'start_chat_mode':
+        if action_type == 'start_chat_mode':
             game_state.set_chat_mode()
             response_data['message'] = '대화를 시작하세요'
 

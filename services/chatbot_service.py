@@ -380,16 +380,6 @@ class ChatbotService:
         if self.collection is None or self.collection.count() == 0:
             print("[RAG] ChromaDB 컬렉션이 비어있거나 없습니다.")
             return (None, None, None)
-            
-        game_state = self.game_manager.get_or_create(session_id)
-        
-        # 검색 필터 설정
-        where_filter = None
-        if game_state.dialogue_mode == "mother_chat":
-            # '어머니 대화 모드'일 경우, source가 'mother_story'인 문서만 검색
-            # (※ 전제조건: mother_story.txt를 DB에 추가할 때, metadata로 {"source": "mother_story"}를 반드시 설정해야 합니다.)
-            where_filter = {"source": "mother_story"}
-            print("[RAG] '어머니 대화 모드' 활성화. 검색 범위를 'mother_story'로 제한합니다.")
 
         # 1. 쿼리 임베딩 생성
         query_embedding = self._create_embedding(query)
@@ -398,7 +388,6 @@ class ChatbotService:
         results = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=top_k,
-            where=where_filter,
             include=["documents", "distances", "metadatas"]
         )
 
@@ -456,24 +445,17 @@ class ChatbotService:
         if session_id:
             game_state = self.game_manager.get_or_create(session_id)
 
-            if game_state.dialogue_mode == "mother_chat":
-                # [어머니 대화 모드]
-                base_prompt = "당신은 아들 서강태를 매우 걱정하는 평범한 어머니입니다. 당신은 코치라는 직업에 대해 약간의 불신을 가지고 있습니다. 아들의 과거 상처에 대해 조심스럽게 이야기해주세요. 존댓말을 사용하세요."
-                system_parts.append(base_prompt)
-                system_parts.append("\n[중요 규칙]\n당신은 '??'으로 표시되며, 대답은 항상 '??: [대사]' 형식으로 시작해야 합니다.")
-            else:
-                # [일반 대화 모드] (서강태)
-                system_prompt_config = self.config.get('system_prompt', {})
-                base_prompt = system_prompt_config.get('base', '당신은 서강태입니다.')
-                rules = system_prompt_config.get('rules', [])
-                system_parts.append(base_prompt)
-                if rules:
-                    system_parts.append("\n[대화 규칙]")
-                    for rule in rules:
-                        system_parts.append(f"- {rule}")
-                
-                # AI에게 전달할 스탯 정보를 최신 버전으로 수정
-                state_info = f"""
+            system_prompt_config = self.config.get('system_prompt', {})
+            base_prompt = system_prompt_config.get('base', '당신은 서강태입니다.')
+            rules = system_prompt_config.get('rules', [])
+            system_parts.append(base_prompt)
+            if rules:
+                system_parts.append("\n[대화 규칙]")
+                for rule in rules:
+                    system_parts.append(f"- {rule}")
+            
+            # AI에게 전달할 스탯 정보를 최신 버전으로 수정
+            state_info = f"""
 
 [현재 게임 상태]
 - 현재 시점: {game_state.current_month}월
@@ -487,7 +469,7 @@ class ChatbotService:
 [캐릭터 행동 가이드]
 {self._get_behavior_guide(game_state)}
 """
-                system_parts.append(state_info)
+            system_parts.append(state_info)
 
         # 3. RAG 검색 결과(context)가 있으면 프롬프트에 추가
         if context:
@@ -583,12 +565,28 @@ class ChatbotService:
         3. 문자열 프롬프트 → ChatPromptTemplate 사용
         4. 명령형 → 선언형 (LCEL)
         """
-
         print(f"\n{'='*50}")
         print(f"[USER] {username}: {user_message}")
-
         try:
-            # [1단계] 초기 메시지 처리
+
+            game_state = self.game_manager.get_or_create(username)
+            conversation_history = self.get_session_history(username).messages
+            event_info = self.event_detector.check_event(
+                game_state=game_state,
+                conversation_history=conversation_history
+            )
+
+            if event_info and event_info['event_key'] == '5월_갈등':
+                print(f"[EVENT] 5월 메인 이벤트 발생! 스토리북 '5_main_event'를 재생합니다.")
+                game_state.flags['backstory_revealed'] = True
+                game_state.stats.apply_changes({"intimacy": 10})
+                self.game_manager.save(username)
+                
+                return {
+                    'reply': event_info['trigger_message'],
+                    'storybook_id': '5_main_event'
+                }
+
             if user_message.strip().lower() == "init":
                 bot_name = self.config.get('name', '챗봇')
                 greeting = "왜 오셨어요. 알아서 훈련하겠다고 말씀드렸잖아요."
@@ -781,6 +779,27 @@ class ChatbotService:
         print(f"[USER] {username}: {user_message} (STREAMING)")
 
         try:
+            game_state = self.game_manager.get_or_create(username)
+            conversation_history = self.get_session_history(username).messages
+            event_info = self.event_detector.check_event(
+                game_state=game_state,
+                conversation_history=conversation_history
+            )
+
+            if event_info and event_info['event_key'] == '5월_갈등':
+                print(f"[EVENT] 5월 메인 이벤트 발생! (스트림)")
+                game_state.flags['backstory_revealed'] = True
+                game_state.stats.apply_changes({"intimacy": 10})
+                self.game_manager.save(username)
+
+                response_dict = {
+                    'reply': event_info['trigger_message'],
+                    'storybook_id': '5_main_event'
+                }
+                yield {'type': 'full_response', 'content': response_dict}
+                yield {'type': 'done', 'content': ''}
+                return # 여기서 함수 종료
+
             # [1단계] 초기 메시지 처리
             if user_message.strip().lower() == "init":
                 bot_name = self.config.get('name', '챗봇')

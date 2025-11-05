@@ -93,11 +93,6 @@ class GameState:
 
     # 이전 월 스탯 (전환 스토리북에서 변화량 표시용)
     previous_month_stats: Dict[str, int] = field(default_factory=dict)
-
-    # <<< 수정 시작: 현재 대화 모드를 저장할 플래그 추가 >>>
-    # 일반 대화 모드와 5월 이벤트의 '어머니 대화 모드'를 구분하기 위함입니다.
-    dialogue_mode: str = "normal"  # "normal" | "mother_chat"
-    # <<< 수정 끝 >>>
     
     # <<< 수정 시작: '다음 행동'을 지정하는 플래그 추가 >>>
     # 이유: 8월 이벤트처럼 여러 단계로 진행되는 이벤트를 처리하기 위해, 현재 어떤 단계를 수행해야 하는지 저장해야 합니다.
@@ -139,7 +134,6 @@ class GameState:
             'current_storybook_id': self.current_storybook_id,
             'storybook_completed': self.storybook_completed,
             'previous_month_stats': self.previous_month_stats,
-            'dialogue_mode': self.dialogue_mode,
             'next_action': self.next_action
         }
 
