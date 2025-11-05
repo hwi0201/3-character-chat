@@ -104,23 +104,23 @@
       "pages": [
         {
           "text": "5월의 어느 날, 당신은 텅 빈 훈련장을 마주했다.\n\n항상 가장 먼저 나와 있던 강태가 보이지 않는다. 그의 락커는 굳게 닫혀있다.",
-          "image": null
+          "image": "./static/images/chatbot/5_month_stadium.png"
         },
         {
           "text": "전화를 걸어보지만, 신호음만 반복될 뿐 받지 않는다.\n\n무슨 일이 생긴 걸까? 어제 훈련까지만 해도 괜찮아 보였는데...\n\n불안한 마음에, 당신은 결국 그의 집으로 직접 찾아가 보기로 결심한다.",
-          "image": null
+          "image": "./static/images/chatbot/5_month_stadium.png"
         },
         {
           "text": "당신은 강태의 집 문을 조심스럽게 두드렸다.\n\n잠시 후, 문이 열리고 낯선 중년 여성이 당신을 바라본다.\n\n\"...누구세요? 아, 혹시 강태 코치님?\"",
-          "image": null
+          "image": "./static/images/chatbot/5_month_house.png"
         },
         {
           "text": "강태의 어머니였다. 그녀는 당신을 안으로 들인 후, 무거운 표정으로 입을 열었다.\n\n\"우리 강태가... 중학교 때 코치한테 크게 배신당했어요. 걔 재능 이용해서 팀 성적만 올리려고, 다친 발목으로 계속 뛰게 해서 부상을 악화시켰죠.\"",
-          "image": null
+          "image": "./static/images/chatbot/5_month_mom.png"
         },
         {
           "text": "\"결국 약속했던 명문고 추천도 다른 애한테 줘버렸어요. '부상 때문에 어쩔 수 없었다'면서...\"\n\n\"강태는 그때 이후로, 자기 몸과 재능이 이용당했다고만 생각해요. 그래서 지금 코치님도... 절대 믿지 못하는 겁니다.\"",
-          "image": null
+          "image": "./static/images/chatbot/5_month_mom.png"
         },
         {
           "text": "그때, 현관문이 열리며 훈련복 차림의 강태가 들어왔다. 당신과 어머니를 번갈아 보던 그의 얼굴이 굳어졌다.\n\n\"? 코치님이 왜 여기에... 어디까지 들으신 거죠.\"",
@@ -218,7 +218,7 @@
         },
         {
           "text": "강태가 더그아웃에 앉아 배트를 쥔 채 고개를 숙이고 있다. 그의 눈빛이 흔들리고 있다.\n\n팀의 운명이, 그리고 강태의 미래가 다음 타석에 달려있다.\n\n이제, 타석에 오르기 전인 그에게 다가가 조언을 해주자.",
-          "image": null
+          "image": "./static/images/chatbot/8_month_dugout.png"
         }
       ],
       "completion_action": "start_chat_mode"
@@ -317,15 +317,15 @@
       "pages": [
         {
           "text": "9월.\n\n드디어 드래프트의 날이 왔다.\n\n강태와 함께한 6개월이 이 순간을 위한 것이었다.",
-          "image": null
+          "image": "./static/images/chatbot/9_month.png"
         },
         {
           "text": "\"코치님, 준비됐어요. 이제 제 진짜 실력을 보여드릴게요!\"\n\n강태가 자신감 넘치는 표정으로 말한다.\n\n당신과 함께한 시간이 그를 완전히 바꿔놓았다.",
-          "image": null
+          "image": "./static/images/chatbot/9_month.png"
         },
         {
           "text": "이제 결과를 확인할 시간이다.\n\n강태는 어떤 평가를 받을까?\n\n당신의 노력이 결실을 맺을 것인가?",
-          "image": null
+          "image": "./static/images/chatbot/9_month.png"
         }
       ],
       "completion_action": "determine_ending"
@@ -336,29 +336,29 @@
       "id": "S",
       "title": "꿈의 무대, 더 빅 리그",
       "pages": [
-        {"text": "믿을 수 없는 소식이 전해졌다. 메이저리그 스카우터가 당신의 잠재력을 높이 평가하여, 태평양 건너 꿈의 무대로 당신을 초대했다!", "image": "./static/images/chatbot/cheers1.png"},
-        {"text": "'코치님... 저, 메이저리그에 갑니다.' 그의 목소리는 떨렸지만, 눈은 그 어느 때보다 빛나고 있었다. 당신과 그의 땀이 만든 기적이었다.", "image": "./static/images/chatbot/cheers1.png"}
+        {"text": "믿을 수 없는 소식이 전해졌다. 메이저리그 스카우터가 당신의 잠재력을 높이 평가하여, 태평양 건너 꿈의 무대로 당신을 초대했다!", "image": "./static/images/chatbot/ending1_major.png"},
+        {"text": "'코치님... 저, 메이저리그에 갑니다.' 그의 목소리는 떨렸지만, 눈은 그 어느 때보다 빛나고 있었다. 당신과 그의 땀이 만든 기적이었다.", "image": "./static/images/chatbot/ending1_major.png"}
       ]
     },
     "A1": {
       "id": "A1",
       "title": "전설의 시작",
-      "pages": [{"text": "드래프트 1라운드. 가장 먼저 당신의 이름이 불렸다. 모두가 당신을 주목한다. 새로운 전설이 시작되는 순간이다.", "image": "./static/images/chatbot/cheers1.png"}]
+      "pages": [{"text": "드래프트 1라운드. 가장 먼저 당신의 이름이 불렸다. 모두가 당신을 주목한다. 새로운 전설이 시작되는 순간이다.", "image": "./static/images/chatbot/ending2_round1.png"}]
     },
-    "A2": {"id": "A2", "title": "빛나는 유망주", "pages": [{"text": "드래프트 2라운드. 안정적인 상위권 지명. 당신의 가치를 증명했다.", "image": "./static/images/chatbot/cheers1.png"}]},
-    "A3": {"id": "A3", "title": "프로의 문턱을 넘다", "pages": [{"text": "드래프트 3라운드. 프로의 문턱을 넘었다. 이제 진짜 경기가 시작된다.", "image": "./static/images/chatbot/cheers1.png"}]},
-    "A4": {"id": "A4", "title": "아쉬운 상위 라운드", "pages": [{"text": "드래프트 4라운드. 기대보다 아쉬운 결과지만, 당신의 잠재력은 여전하다.", "image": "./static/images/chatbot/cheers1.png"}]},
-    "B1": {"id": "B1", "title": "흙 속의 진주", "pages": [{"text": "드래프트 5라운드. 중위권의 반란이 시작된다. 당신이 그 주인공이다.", "image": "./static/images/chatbot/cheers2.png"}]},
-    "B2": {"id": "B2", "title": "늦게 핀 꽃", "pages": [{"text": "드래프트 6라운드. 끈기와 노력으로 얻어낸 소중한 결과다.", "image": "./static/images/chatbot/cheers2.png"}]},
-    "B3": {"id": "B3", "title": "운보다 끈기였다", "pages": [{"text": "드래프트 7라운드. 결코 포기하지 않은 자의 승리다.", "image": "./static/images/chatbot/cheers2.png"}]},
-    "B4": {"id": "B4", "title": "마지막 이름", "pages": [{"text": "드래프트 8라운드. 문은 좁았지만, 당신은 그 문을 통과했다.", "image": "./static/images/chatbot/cheers2.png"}]},
-    "C1": {"id": "C1", "title": "다시 9회 말로", "pages": [{"text": "드래프트 9라운드. 아슬아슬하게 프로의 꿈을 잡았다. 이제부터가 진짜 시작이다.", "image": "./static/images/chatbot/ballpark.png"}]},
-    "C2": {"id": "C2", "title": "한 번 더 성장의 마운드로", "pages": [{"text": "드래프트 10라운드. 마지막 기회를 놓치지 않았다.", "image": "./static/images/chatbot/ballpark.png"}]},
-    "C3": {"id": "C3", "title": "미래를 준비하는 투구폼", "pages": [{"text": "드래프트 11라운드. 마지막으로 이름이 불렸다. 이제 당신의 가치를 증명할 시간이다.", "image": "./static/images/chatbot/ballpark.png"}]},
-    "C4": {"id": "C4", "title": "다시 돌아간다", "pages": [{"text": "아쉽게도 프로 구단의 선택을 받지 못했다. 하지만 아직 기회는 있다. 대학교에서 실력을 더 갈고닦아 4년 뒤를 노리기로 했다.", "image": "./static/images/chatbot/ballpark.png"}]},
-    "D1": {"id": "D1", "title": "아직 꺼지지 않은 불꽃", "pages": [{"text": "프로의 벽은 높았다. 하지만 야구를 포기할 수 없었다. 당신은 독립구단에 입단하여 다시 한번 기회를 엿보기로 했다.", "image": null}]},
-    "D2": {"id": "D2", "title": "마이너의 영웅", "pages": [{"text": "독립구단에서 다시 시작한다. 언젠가 다시 불려질 이름을 위해.", "image": null}]},
-    "D3": {"id": "D3", "title": "언제나 마음속엔 마운드가", "pages": [{"text": "결국 프로의 꿈은 멀었다. 하지만 당신의 마음속엔 언제나 푸른 마운드가 있을 것이다.", "image": null}]},
-    "D4": {"id": "D4", "title": "끝이 아닌, 다른 시작", "pages": [{"text": "치열했던 경쟁 끝에, 당신은 배트를 내려놓기로 결심했다. 야구는 끝났지만, 당신의 인생은 이제부터 시작이다.", "image": null}]}
+    "A2": {"id": "A2", "title": "빛나는 유망주", "pages": [{"text": "드래프트 2라운드. 안정적인 상위권 지명. 당신의 가치를 증명했다.", "image": "./static/images/chatbot/ending3_round2_4.png"}]},
+    "A3": {"id": "A3", "title": "프로의 문턱을 넘다", "pages": [{"text": "드래프트 3라운드. 프로의 문턱을 넘었다. 이제 진짜 경기가 시작된다.", "image": "./static/images/chatbot/ending3_round2_4.png"}]},
+    "A4": {"id": "A4", "title": "아쉬운 상위 라운드", "pages": [{"text": "드래프트 4라운드. 기대보다 아쉬운 결과지만, 당신의 잠재력은 여전하다.", "image": "./static/images/chatbot/ending3_round2_4.png"}]},
+    "B1": {"id": "B1", "title": "흙 속의 진주", "pages": [{"text": "드래프트 5라운드. 중위권의 반란이 시작된다. 당신이 그 주인공이다.", "image": "./static/images/chatbot/ending4_round5_8.png"}]},
+    "B2": {"id": "B2", "title": "늦게 핀 꽃", "pages": [{"text": "드래프트 6라운드. 끈기와 노력으로 얻어낸 소중한 결과다.", "image": "./static/images/chatbot/ending4_round5_8.png"}]},
+    "B3": {"id": "B3", "title": "운보다 끈기였다", "pages": [{"text": "드래프트 7라운드. 결코 포기하지 않은 자의 승리다.", "image": "./static/images/chatbot/ending4_round5_8.png"}]},
+    "B4": {"id": "B4", "title": "마지막 이름", "pages": [{"text": "드래프트 8라운드. 문은 좁았지만, 당신은 그 문을 통과했다.", "image": "./static/images/chatbot/ending4_round5_8.png"}]},
+    "C1": {"id": "C1", "title": "다시 9회 말로", "pages": [{"text": "드래프트 9라운드. 아슬아슬하게 프로의 꿈을 잡았다. 이제부터가 진짜 시작이다.", "image": "./static/images/chatbot/ending5_round9_11.png"}]},
+    "C2": {"id": "C2", "title": "한 번 더 성장의 마운드로", "pages": [{"text": "드래프트 10라운드. 마지막 기회를 놓치지 않았다.", "image": "./static/images/chatbot/ending5_round9_11.png"}]},
+    "C3": {"id": "C3", "title": "미래를 준비하는 투구폼", "pages": [{"text": "드래프트 11라운드. 마지막으로 이름이 불렸다. 이제 당신의 가치를 증명할 시간이다.", "image": "./static/images/chatbot/ending5_round9_11.png"}]},
+    "C4": {"id": "C4", "title": "다시 돌아간다", "pages": [{"text": "아쉽게도 프로 구단의 선택을 받지 못했다. 하지만 아직 기회는 있다. 대학교에서 실력을 더 갈고닦아 4년 뒤를 노리기로 했다.", "image": "./static/images/chatbot/ending6_university.png"}]},
+    "D1": {"id": "D1", "title": "아직 꺼지지 않은 불꽃", "pages": [{"text": "프로의 벽은 높았다. 하지만 야구를 포기할 수 없었다. 당신은 독립구단에 입단하여 다시 한번 기회를 엿보기로 했다.", "image": "./static/images/chatbot/ending7.png"}]},
+    "D2": {"id": "D2", "title": "마이너의 영웅", "pages": [{"text": "독립구단에서 다시 시작한다. 언젠가 다시 불려질 이름을 위해.", "image": "./static/images/chatbot/ending7.png"}]},
+    "D3": {"id": "D3", "title": "언제나 마음속엔 마운드가", "pages": [{"text": "결국 프로의 꿈은 멀었다. 하지만 당신의 마음속엔 언제나 푸른 마운드가 있을 것이다.", "image": "./static/images/chatbot/ending8_giveup.png"}]},
+    "D4": {"id": "D4", "title": "끝이 아닌, 다른 시작", "pages": [{"text": "치열했던 경쟁 끝에, 당신은 배트를 내려놓기로 결심했다. 야구는 끝났지만, 당신의 인생은 이제부터 시작이다.", "image": "./static/images/chatbot/ending8_giveup.png"}]}
   }
 }
