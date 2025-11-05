@@ -121,11 +121,11 @@
       "pages": [
         {
           "text": "힘들었던 5월이 지나간다.\n\n강태의 깊은 상처를 알게 된 당신. 그리고 그런 당신에게 조금씩 마음을 열기 시작한 강태.\n\n두 사람의 관계는 이전과는 비교할 수 없을 정도로 단단해졌다.",
-          "image": null
+          "image": "./static/images/chatbot/5_month.png"
         },
         {
-          "text": "\"코치님. ...감사합니다.\"\n\n훈련이 끝난 뒤, 강태가 처음으로 진심이 담긴 인사를 건넨다.\n\n\"이제... 도망치지 않을게요.\"\n\n그의 눈빛은 더 이상 흔들리지 않았다.",
-          "image": null
+          "text": "\"코치님. ...감사합니다.\"\n\n강태가 처음으로 진심이 담긴 인사를 건넨다.\n\n\"이제... 도망치지 않을게요.\"\n\n그의 눈빛은 더 이상 흔들리지 않았다.",
+          "image": "./static/images/chatbot/5_month.png"
         }
       ],
       "completion_action": "show_next_storybook",
