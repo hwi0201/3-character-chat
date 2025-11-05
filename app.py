@@ -545,6 +545,65 @@ def api_get_current_storybook():
         }), 500
 
 
+@app.route('/api/training', methods=['POST'])
+def api_training():
+    """훈련 세션 처리"""
+    try:
+        data = request.get_json()
+        username = data.get('username', '사용자')
+        intensity = data.get('intensity', 50)
+        focuses = data.get('focuses', [])
+
+        if not focuses:
+            return jsonify({
+                'success': False,
+                'error': '훈련할 항목을 선택해주세요.'
+            }), 400
+
+        from services import get_chatbot_service
+        from services.training_manager import get_training_manager
+
+        chatbot = get_chatbot_service()
+        game_state = chatbot.game_manager.get_or_create(username)
+
+        training_manager = get_training_manager()
+
+        # 훈련 실행
+        outcome = training_manager.execute(
+            game_state=game_state,
+            intensity=intensity,
+            focuses=focuses
+        )
+
+        # 게임 상태 저장
+        chatbot.game_manager.save(username)
+
+        return jsonify({
+            'success': True,
+            'intensity_label': outcome.intensity_label,
+            'summary': outcome.summary,
+            'stat_changes': outcome.stat_changes,
+            'stamina_change': outcome.stamina_change,
+            'total_changes': outcome.total_changes,
+            'conversation_note': outcome.conversation_note
+        })
+
+    except ValueError as e:
+        print(f"[ERROR] 훈련 처리 실패 (검증): {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+    except Exception as e:
+        print(f"[ERROR] 훈련 처리 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': '서버 오류가 발생했습니다.'
+        }), 500
+
+
 @app.route('/api/game/check-goals', methods=['GET'])
 def api_check_goals():
     """
