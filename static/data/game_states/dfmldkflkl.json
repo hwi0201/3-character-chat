@@ -1,6 +1,6 @@
 {
-  "session_id": "사용자",
-  "current_month": 7,
+  "session_id": "dfmldkflkl",
+  "current_month": 4,
   "current_day": 1,
   "stats": {
     "intimacy": 0,
@@ -24,13 +24,7 @@
   "storybook_completed": {
     "3_opening": true,
     "3_to_4_transition": true,
-    "4_opening": true,
-    "4_to_5_transition": true,
-    "5_main_event": true,
-    "5_to_6_transition": true,
-    "6_opening": true,
-    "6_to_7_transition": true,
-    "7_opening": true
+    "4_opening": true
   },
   "previous_month_stats": {},
   "next_action": null
