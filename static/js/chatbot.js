@@ -41,6 +41,16 @@ const AppState = {
     status: 'pending',      // 'pending' | 'loading' | 'ready' | 'error'
     storybookChecked: false,
     gameStateLoaded: false
+  },
+
+  // 스탯 애니메이션을 위한 이전 값 저장
+  previousStats: {
+    intimacy: null,
+    mental: null,
+    stamina: null,
+    batting: null,
+    speed: null,
+    defense: null
   }
 };
 
@@ -229,6 +239,14 @@ async function submitTraining(event) {
 
     const data = await response.json();
 
+    // 경고 처리 (체력 부족, 훈련 횟수 초과 등)
+    if (!data.success && data.warning) {
+      closeTrainingModal();
+      showWarning(data.message);
+      return;
+    }
+
+    // 실제 오류 처리
     if (!response.ok || !data.success) {
       throw new Error(data.error || '훈련 요청이 실패했습니다.');
     }
@@ -301,6 +319,50 @@ function showError(userMessage, error = null) {
     console.error(error);
   }
   appendMessageSync("bot", `❌ ${userMessage}`);
+}
+
+/**
+ * 알림 자동 제거 (공통 함수)
+ * @param {string} notifId - 알림 ID
+ * @param {number} delay - 제거까지 대기 시간 (ms)
+ */
+function autoRemoveNotification(notifId, delay = 7000) {
+  setTimeout(() => {
+    const element = document.getElementById(notifId);
+    if (element) {
+      element.style.opacity = '0';
+      element.style.transform = 'translateY(-20px)';
+      setTimeout(() => element.remove(), 300);
+    }
+  }, delay);
+}
+
+/**
+ * 경고 알림 표시 (7초 후 자동 사라짐)
+ * @param {string} message - 경고 메시지
+ */
+function showWarning(message) {
+  const notifId = `warning-${AppState.counters.notification++}`;
+  const container = document.getElementById("notifications-container");
+  if (!container) {
+    // 컨테이너가 없으면 콘솔에만 출력
+    console.warn('[WARNING]', message);
+    return;
+  }
+
+  const notification = document.createElement("div");
+  notification.className = "notification-item warning";
+  notification.id = notifId;
+  notification.innerHTML = `
+    <div class="notification-title">
+      ⚠️ ${message}
+    </div>
+  `;
+
+  container.appendChild(notification);
+
+  // 7초 후 자동 제거
+  autoRemoveNotification(notifId, 7000);
 }
 
 // ============================================================================
@@ -415,6 +477,24 @@ async function sendMessage(isInitial = false) {
           } else if (event.type === 'done') {
             // 스트리밍 완료
             console.log('[STREAM] 완료');
+
+          } else if (event.type === 'event_update') {
+            // 이벤트 업데이트 (비동기)
+            console.log('[EVENT] 이벤트 업데이트');
+            const eventInfo = event.content;
+            if (eventInfo && eventInfo.choices) {
+              showEventWithOptions(eventInfo);
+            } else if (eventInfo) {
+              showEventNotification(eventInfo);
+            }
+
+          } else if (event.type === 'hint_update') {
+            // 힌트 업데이트 (비동기, 컨텍스트 포함)
+            console.log('[HINT] 힌트 업데이트');
+            const hintInfo = event.content;
+            if (hintInfo && hintInfo.hint) {
+              showHintWithContext(hintInfo);
+            }
 
           } else if (event.type === 'error') {
             // 오류 처리
@@ -691,7 +771,7 @@ function handleChatMetadata(data) {
     console.log("💖 친밀도 레벨:", data.debug.game_state.intimacy_level);
 
     console.group("📊 스탯 변화");
-    if (Object.keys(data.debug.stat_changes.changes).length > 0) {
+    if (data.debug.stat_changes && Object.keys(data.debug.stat_changes.changes).length > 0) {
       console.log("변화량:", data.debug.stat_changes.changes);
       console.log("이유:", data.debug.stat_changes.reason);
       console.table({
@@ -703,7 +783,7 @@ function handleChatMetadata(data) {
     }
     console.groupEnd();
 
-    if (data.debug.event_check.triggered) {
+    if (data.debug.event_check?.triggered) {
       console.log("🎭 이벤트 발생:", data.debug.event_check.event_name);
     }
 
@@ -904,6 +984,11 @@ function updateStatBar(statName, value) {
     return;
   }
 
+  // 이전 값과 비교하여 변화 감지
+  const previousValue = AppState.previousStats[statName];
+  const hasChanged = previousValue !== null && previousValue !== value;
+  const change = hasChanged ? value - previousValue : 0;
+
   // 수정: 모든 스탯의 최대값이 100이므로, 텍스트를 '값/100' 형식으로 업데이트합니다.
   statValue.textContent = `${value}/100`;
   statBar.style.width = `${value}%`;
@@ -917,6 +1002,49 @@ function updateStatBar(statName, value) {
     statBar.style.backgroundColor = "#FF9800"; // 낮음 (주황색)
   } else {
     statBar.style.backgroundColor = "#F44336"; // 매우 낮음 (빨간색)
+  }
+
+  // 변화가 있으면 애니메이션 적용
+  if (hasChanged && change !== 0) {
+    // 기존 애니메이션 클래스 제거
+    statBar.classList.remove('stat-increased', 'stat-decreased');
+
+    // 새 애니메이션 클래스 추가
+    const animationClass = change > 0 ? 'stat-increased' : 'stat-decreased';
+    statBar.classList.add(animationClass);
+
+    // 변화량 표시 인디케이터 생성
+    createStatChangeIndicator(statBar, change);
+
+    // 애니메이션 종료 후 클래스 제거
+    setTimeout(() => {
+      statBar.classList.remove(animationClass);
+    }, 600);
+  }
+
+  // 현재 값을 이전 값으로 저장
+  AppState.previousStats[statName] = value;
+}
+
+function createStatChangeIndicator(statBar, change) {
+  // 이유: 스탯 변화량을 시각적으로 표시하는 부유 인디케이터를 생성합니다.
+  const indicator = document.createElement('div');
+  indicator.className = 'stat-change-indicator';
+  indicator.textContent = change > 0 ? `+${change}` : `${change}`;
+  indicator.style.color = change > 0 ? '#4CAF50' : '#F44336';
+
+  // 스탯 바의 부모 요소(stat-bar-container)에 추가
+  const container = statBar.parentElement;
+  if (container) {
+    container.style.position = 'relative'; // 위치 기준 설정
+    container.appendChild(indicator);
+
+    // 애니메이션 종료 후 제거
+    setTimeout(() => {
+      if (indicator.parentElement) {
+        indicator.remove();
+      }
+    }, 1200);
   }
 }
 /* <<< 수정 끝 >>> */
@@ -943,6 +1071,9 @@ function showEventNotification(eventInfo) {
   `;
 
   container.appendChild(notification);
+
+  // 7초 후 자동 제거
+  autoRemoveNotification(notifId, 7000);
 }
 
 // 힌트 알림 표시 (스탯 패널 아래)
@@ -967,6 +1098,37 @@ function showHintNotification(hint) {
   `;
 
   container.appendChild(notification);
+
+  // 7초 후 자동 제거
+  autoRemoveNotification(notifId, 7000);
+}
+
+// 힌트 알림 표시 (컨텍스트 포함)
+function showHintWithContext(hintInfo) {
+  const notifId = `notif-${AppState.counters.notification++}`;
+  const container = document.getElementById("notifications-container");
+  if (!container) return;
+
+  const notification = document.createElement("div");
+  notification.className = "notification-item hint";
+  notification.id = notifId;
+  notification.innerHTML = `
+    <div class="notification-header" onclick="toggleNotification('${notifId}')">
+      <div class="notification-title">
+        💡 힌트
+      </div>
+      <button class="notification-close" onclick="removeNotification(event, '${notifId}')">×</button>
+    </div>
+    <div class="notification-body">
+      ${hintInfo.hint}
+      ${hintInfo.related_message ? `<br><small style="opacity: 0.7;">💬 관련 대화: "${hintInfo.related_message}"</small>` : ''}
+    </div>
+  `;
+
+  container.appendChild(notification);
+
+  // 7초 후 자동 제거
+  autoRemoveNotification(notifId, 7000);
 }
 
 // 알림 펼치기/접기

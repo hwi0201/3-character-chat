@@ -818,12 +818,73 @@
         background: #F0F0F0;
         border-radius: 0;
         overflow: hidden;
+        position: relative;
       }
       .stat-bar {
         height: 100%;
         background: #336B68;
-        transition: width 0.5s ease, background-color 0.3s;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s;
         border-radius: 0;
+      }
+
+      /* 스탯 변화 애니메이션 */
+      .stat-bar.stat-increased {
+        animation: pulse-green 0.6s ease-out;
+      }
+      .stat-bar.stat-decreased {
+        animation: pulse-red 0.6s ease-out;
+      }
+
+      @keyframes pulse-green {
+        0%, 100% { box-shadow: none; }
+        50% { box-shadow: 0 0 15px rgba(76, 175, 80, 0.8); }
+      }
+
+      @keyframes pulse-red {
+        0%, 100% { box-shadow: none; }
+        50% { box-shadow: 0 0 15px rgba(244, 67, 54, 0.8); }
+      }
+
+      /* 변화량 표시 */
+      .stat-change-indicator {
+        position: absolute;
+        right: 0;
+        top: -25px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 4px;
+        animation: fade-up 1.2s ease-out forwards;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .stat-change-indicator.positive {
+        color: #4CAF50;
+        background: rgba(76, 175, 80, 0.1);
+      }
+
+      .stat-change-indicator.negative {
+        color: #F44336;
+        background: rgba(244, 67, 54, 0.1);
+      }
+
+      @keyframes fade-up {
+        0% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        70% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+      }
+
+      .stat-item {
+        position: relative;
       }
       .game-info {
         margin-top: 20px;
@@ -933,6 +994,18 @@
       .notification-item.event:hover {
         background: #2C5C59;
         transform: translateY(-5px) scale(1.05);
+      }
+
+      .notification-item.warning {
+        background: #FFF3CD;
+        border: 2px solid #FF9800;
+        color: #856404;
+        transition: all 0.3s ease;
+      }
+
+      .notification-item.warning:hover {
+        background: #FFC107;
+        color: white;
       }
 
       .notification-title {

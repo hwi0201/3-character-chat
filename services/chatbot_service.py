@@ -866,7 +866,7 @@ class ChatbotService:
             print(f"[BOT] {full_response[:100]}...")
             print(f"[MEMORY] ✓ Conversation automatically saved to session '{username}'")
 
-            # [6단계] 스탯 변화 계산 및 적용
+            # [6단계] 스탯 변화 계산 및 적용 (빠름)
             game_state = self.game_manager.get_or_create(username)
             old_stats = game_state.stats.to_dict()
 
@@ -886,22 +886,44 @@ class ChatbotService:
             self.game_manager.save(username)
             print(f"[GAME] ✓ Game state saved for '{username}'")
 
-            # [8단계] 이벤트 감지 및 힌트 제공
+            # [8단계] done 신호 즉시 전송 ⭐
+            yield {
+                'type': 'done',
+                'content': ''
+            }
+
+            # [9단계] 스탯 메타데이터 즉시 전송 (빠름)
             conversation_history = self.get_session_history(username).messages
 
+            yield {
+                'type': 'metadata',
+                'content': {
+                    'debug': {
+                        'game_state': {
+                            'current_month': game_state.current_month,
+                            'current_day': game_state.current_day,
+                            'stats': game_state.stats.to_dict(),
+                            'intimacy_level': self.stat_calculator.get_intimacy_level(game_state.stats.intimacy),
+                            'months_until_draft': game_state.get_months_until_draft(),
+                        },
+                        'stat_changes': {
+                            'changes': stat_changes,
+                            'reason': stat_reason,
+                            'old_stats': old_stats,
+                            'new_stats': game_state.stats.to_dict()
+                        },
+                        'conversation_count': len(conversation_history),
+                        'event_history': game_state.event_history
+                    }
+                }
+            }
+
+            # [10단계] 이벤트 감지 (백그라운드, 느림 - 타임아웃 3초)
             event_info = self.event_detector.check_event(
                 game_state=game_state,
                 conversation_history=conversation_history,
                 recent_messages=10
             )
-
-            hint = None
-            if len(conversation_history) >= 5:
-                hint = self.event_detector.get_hint(
-                    game_state=game_state,
-                    conversation_history=conversation_history,
-                    stuck_threshold=5
-                )
 
             if event_info:
                 print(f"[EVENT] ✓ Event triggered: {event_info['event_name']}")
@@ -920,52 +942,33 @@ class ChatbotService:
                 # 게임 상태 저장
                 self.game_manager.save(username)
 
-            if hint:
-                print(f"[HINT] ✓ Hint provided: {hint}")
-
-            # [9단계] 메타데이터 전송
-            print(f"{'='*50}\n")
-
-            metadata = {
-                'debug': {
-                    'game_state': {
-                        'current_month': game_state.current_month,
-                        'current_day': game_state.current_day,
-                        'stats': game_state.stats.to_dict(),
-                        'intimacy_level': self.stat_calculator.get_intimacy_level(game_state.stats.intimacy),
-                        'months_until_draft': game_state.get_months_until_draft(),
-                    },
-                    'stat_changes': {
-                        'changes': stat_changes,
-                        'reason': stat_reason,
-                        'old_stats': old_stats,
-                        'new_stats': game_state.stats.to_dict()
-                    },
-                    'event_check': {
-                        'triggered': event_info is not None,
-                        'event_name': event_info['event_name'] if event_info else None
-                    },
-                    'hint_provided': hint is not None,
-                    'conversation_count': len(conversation_history),
-                    'event_history': game_state.event_history
+                # 이벤트 업데이트 전송 ⭐
+                yield {
+                    'type': 'event_update',
+                    'content': event_info
                 }
-            }
 
-            if event_info:
-                metadata['event'] = event_info
-            if hint:
-                metadata['hint'] = hint
+            # [11단계] 힌트 제공 (백그라운드, 느림 - 타임아웃 3초)
+            if len(conversation_history) >= 5:
+                hint = self.event_detector.get_hint(
+                    game_state=game_state,
+                    conversation_history=conversation_history,
+                    stuck_threshold=5
+                )
 
-            yield {
-                'type': 'metadata',
-                'content': metadata
-            }
+                if hint:
+                    print(f"[HINT] ✓ Hint provided: {hint}")
 
-            # [10단계] 완료 신호
-            yield {
-                'type': 'done',
-                'content': ''
-            }
+                    # 힌트 업데이트 전송 (컨텍스트 포함) ⭐
+                    yield {
+                        'type': 'hint_update',
+                        'content': {
+                            'hint': hint,
+                            'related_message': full_response[:50] + "..."
+                        }
+                    }
+
+            print(f"{'='*50}\n")
 
         except Exception as e:
             print(f"[ERROR] 스트리밍 응답 생성 실패: {e}")

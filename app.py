@@ -659,11 +659,15 @@ def api_training():
         })
 
     except ValueError as e:
-        print(f"[ERROR] 훈련 처리 실패 (검증): {e}")
+        error_msg = str(e)
+        print(f"[WARNING] 훈련 제한 조건: {error_msg}")
+
+        # 체력 부족이나 훈련 횟수 초과는 "경고"로 처리 (오류가 아님)
         return jsonify({
             'success': False,
-            'error': str(e)
-        }), 400
+            'warning': True,  # 경고 플래그
+            'message': error_msg
+        }), 200  # 200 OK로 반환 (정상적인 게임 메커니즘)
     except Exception as e:
         print(f"[ERROR] 훈련 처리 실패: {e}")
         import traceback
