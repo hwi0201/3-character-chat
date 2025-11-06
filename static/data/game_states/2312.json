@@ -1,0 +1,60 @@
+{
+  "session_id": "2312",
+  "current_month": 5,
+  "current_day": 1,
+  "stats": {
+    "intimacy": 18,
+    "mental": 17,
+    "stamina": 100,
+    "batting": 46,
+    "speed": 31,
+    "defense": 41
+  },
+  "flags": {
+    "backstory_revealed": true,
+    "tournament_result": "strikeout",
+    "steal_phobia_overcome": false,
+    "conflict_event_completed": true
+  },
+  "event_history": [],
+  "special_moments": [],
+  "training_schedule": {},
+  "training_history": [
+    {
+      "month": 4,
+      "intensity": 100,
+      "intensity_label": "High-Intensity Training",
+      "focuses": [
+        "batting",
+        "speed",
+        "defense"
+      ],
+      "stat_changes": {
+        "batting": 6,
+        "speed": 6,
+        "defense": 6
+      },
+      "stamina_change": -20,
+      "summary": "Month 4 High-Intensity Training focused on Batting, Speed, Defense. Result: Batting +6, Speed +6, Defense +6, Stamina -20."
+    }
+  ],
+  "current_phase": "chat",
+  "current_storybook_id": null,
+  "storybook_completed": {
+    "3_opening": true,
+    "3_to_4_transition": true,
+    "4_opening": true,
+    "4_to_5_transition": true,
+    "5_main_event": true
+  },
+  "previous_month_stats": {
+    "intimacy": 4,
+    "mental": 35,
+    "stamina": 100,
+    "batting": 46,
+    "speed": 31,
+    "defense": 41
+  },
+  "next_action": null,
+  "training_count_this_month": 0
+}

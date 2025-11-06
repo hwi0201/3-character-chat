@@ -34,6 +34,23 @@ const AppState = {
     isSubmitting: false,
     intensity: 60,
     focuses: ['batting']
+  },
+
+  // 초기화 상태
+  initialization: {
+    status: 'pending',      // 'pending' | 'loading' | 'ready' | 'error'
+    storybookChecked: false,
+    gameStateLoaded: false
+  },
+
+  // 스탯 애니메이션을 위한 이전 값 저장
+  previousStats: {
+    intimacy: null,
+    mental: null,
+    stamina: null,
+    batting: null,
+    speed: null,
+    defense: null
   }
 };
 
@@ -49,7 +66,7 @@ const MONTH_INFO = {
   },
   4: {
     title: "4월 - 봄의 시작",
-    subtitle: "기초를 다지는 시간",
+    subtitle: "기초를 다지는 시간\n\n※스탯조절 창에 있는 훈련 조절 버튼을 눌러서 훈련을 시작하세요!",
     description: "탄탄한 기본기로 미래를 준비합니다"
   },
   5: {
@@ -59,16 +76,16 @@ const MONTH_INFO = {
   },
   6: {
     title: "6월 - 중반전",
-    subtitle: "반환점을 돌았습니다",
+    subtitle: "반환점을 돌았습니다\n\n※스탯조절 창에 있는 훈련 조절 버튼을 눌러서 훈련을 시작하세요!",
     description: "약점을 보완하고 강점을 극대화합니다"
   },
   7: {
     title: "7월 - 여름 강화",
-    subtitle: "무더위를 뚫고 전진",
+    subtitle: "무더위를 뚫고 전진\n\n※스탯조절 창에 있는 훈련 조절 버튼을 눌러서 훈련을 시작하세요!",
     description: "체력과 멘탈을 끌어올립니다"
   },
   8: {
-    title: "8월 - 막바지 준비",
+    title: "8월 - 결전의 날",
     subtitle: "마지막 스퍼트",
     description: "드래프트가 한 달 앞으로 다가왔습니다"
   },
@@ -222,18 +239,22 @@ async function submitTraining(event) {
 
     const data = await response.json();
 
+    // 경고 처리 (체력 부족, 훈련 횟수 초과 등)
+    if (!data.success && data.warning) {
+      closeTrainingModal();
+      showWarning(data.message);
+      return;
+    }
+
+    // 실제 오류 처리
     if (!response.ok || !data.success) {
       throw new Error(data.error || '훈련 요청이 실패했습니다.');
     }
 
     closeTrainingModal();
 
-    const changeText = formatTrainingChanges(data.stat_changes, data.stamina_change);
-    const message = ["<strong>" + data.intensity_label + "</strong>", data.summary];
-    if (changeText) {
-      message.push('변화: ' + changeText);
-    }
-    appendMessageSync('guide', message.join('<br>'));
+    // 훈련 결과를 카드 형식으로 표시
+    showTrainingResultCard(data);
 
     await fetchGameState();
   } catch (error) {
@@ -277,7 +298,148 @@ function initializeTrainingUI() {
     });
   }
 
+  // 훈련 카드 클릭 이벤트 초기화
+  initializeTrainingCards();
+
+  // 강도 마커 클릭 이벤트 추가
+  initializeIntensityMarkers();
+
   refreshTrainingAvailability();
+}
+
+/**
+ * 훈련 카드 클릭 이벤트 초기화
+ */
+function initializeTrainingCards() {
+  const trainingCards = document.querySelectorAll('.training-card');
+
+  trainingCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const checkbox = card.querySelector('input[type="checkbox"]');
+      if (!checkbox) return;
+
+      // 체크박스 상태 토글
+      checkbox.checked = !checkbox.checked;
+
+      // 카드 active 클래스 토글
+      card.classList.toggle('active', checkbox.checked);
+
+      // 최소 1개는 선택되어 있어야 함
+      const allCheckboxes = document.querySelectorAll('.training-card input[type="checkbox"]');
+      const checkedCount = Array.from(allCheckboxes).filter(cb => cb.checked).length;
+
+      if (checkedCount === 0) {
+        // 마지막 하나를 해제하려고 할 때 다시 체크
+        checkbox.checked = true;
+        card.classList.add('active');
+      }
+    });
+  });
+}
+
+/**
+ * 강도 마커 클릭 이벤트 초기화
+ */
+function initializeIntensityMarkers() {
+  const intensityMarkers = document.querySelectorAll('.intensity-marker');
+
+  intensityMarkers.forEach(marker => {
+    marker.addEventListener('click', () => {
+      const value = Number(marker.getAttribute('data-value'));
+      if (trainingIntensityInput && !isNaN(value)) {
+        trainingIntensityInput.value = value;
+        AppState.training.intensity = value;
+        updateTrainingIntensityLabel(value);
+      }
+    });
+  });
+}
+
+/**
+ * 훈련 결과를 카드 형식으로 표시
+ * @param {Object} data - 훈련 결과 데이터
+ */
+function showTrainingResultCard(data) {
+  const chatLog = document.getElementById('chat-log');
+  if (!chatLog) return;
+
+  // 강도 레이블 한글 매핑
+  const intensityLabelsKR = {
+    'Recovery Session': '회복 세션',
+    'Light Training': '가벼운 훈련',
+    'Standard Training': '기본 훈련',
+    'Focused Training': '집중 훈련',
+    'High-Intensity Training': '고강도 훈련'
+  };
+
+  // 아이콘 매핑
+  const intensityIcons = {
+    'Recovery Session': '😌',
+    'Light Training': '🏃',
+    'Standard Training': '💪',
+    'Focused Training': '🔥',
+    'High-Intensity Training': '⚡'
+  };
+
+  const statIcons = {
+    'batting': '🏏',
+    'speed': '🏃',
+    'defense': '⚾'
+  };
+
+  const icon = intensityIcons[data.intensity_label] || '💪';
+  const intensityKR = intensityLabelsKR[data.intensity_label] || data.intensity_label;
+
+  // 스탯 변화 항목 생성
+  const statItems = [];
+
+  if (data.stat_changes && Object.keys(data.stat_changes).length > 0) {
+    Object.entries(data.stat_changes).forEach(([key, value]) => {
+      const label = TRAINING_FOCUS_LABELS[key] || key;
+      const valueClass = value > 0 ? 'positive' : value < 0 ? 'negative' : 'neutral';
+      const sign = value > 0 ? '+' : '';
+
+      statItems.push(`
+        <div class="training-result-stat-item">
+          <span class="training-result-stat-label">${statIcons[key] || ''} ${label}</span>
+          <span class="training-result-stat-value ${valueClass}">${sign}${value}</span>
+        </div>
+      `);
+    });
+  }
+
+  // 체력 변화 추가
+  if (typeof data.stamina_change === 'number' && data.stamina_change !== 0) {
+    const valueClass = data.stamina_change > 0 ? 'positive' : data.stamina_change < 0 ? 'negative' : 'neutral';
+    const sign = data.stamina_change > 0 ? '+' : '';
+
+    statItems.push(`
+      <div class="training-result-stat-item">
+        <span class="training-result-stat-label">💚 체력</span>
+        <span class="training-result-stat-value ${valueClass}">${sign}${data.stamina_change}</span>
+      </div>
+    `);
+  }
+
+  // 훈련 결과 카드 HTML 생성 (summary 제거, 깔끔한 레이아웃)
+  const resultCard = document.createElement('div');
+  resultCard.className = 'message training-result-card';
+  resultCard.innerHTML = `
+    <div class="training-result-header">
+      <div class="training-result-icon">${icon}</div>
+      <div class="training-result-title">
+        <h3>${intensityKR}</h3>
+      </div>
+    </div>
+    ${statItems.length > 0 ? `
+      <div class="training-result-stats">
+        ${statItems.join('')}
+      </div>
+    ` : '<p style="text-align: center; color: #666; margin: 10px 0;">훈련을 완료했습니다.</p>'}
+  `;
+
+  chatLog.appendChild(resultCard);
+  chatLog.scrollTop = chatLog.scrollHeight;
 }
 
 // ============================================================================
@@ -294,6 +456,85 @@ function showError(userMessage, error = null) {
     console.error(error);
   }
   appendMessageSync("bot", `❌ ${userMessage}`);
+}
+
+/**
+ * 알림 자동 제거 (공통 함수)
+ * @param {string} notifId - 알림 ID
+ * @param {number} delay - 제거까지 대기 시간 (ms)
+ */
+function autoRemoveNotification(notifId, delay = 7000) {
+  setTimeout(() => {
+    const element = document.getElementById(notifId);
+    if (element) {
+      element.style.opacity = '0';
+      element.style.transform = 'translateY(-20px)';
+      setTimeout(() => element.remove(), 300);
+    }
+  }, delay);
+}
+
+/**
+ * 경고 알림 표시 (7초 후 자동 사라짐)
+ * @param {string} message - 경고 메시지
+ */
+function showWarning(message) {
+  const notifId = `warning-${AppState.counters.notification++}`;
+  const container = document.getElementById("notifications-container");
+  if (!container) {
+    // 컨테이너가 없으면 콘솔에만 출력
+    console.warn('[WARNING]', message);
+    return;
+  }
+
+  const notification = document.createElement("div");
+  notification.className = "notification-item warning";
+  notification.id = notifId;
+  notification.innerHTML = `
+    <div class="notification-title">
+      ⚠️ ${message}
+    </div>
+  `;
+
+  container.appendChild(notification);
+
+  // 7초 후 자동 제거
+  autoRemoveNotification(notifId, 7000);
+}
+
+// ============================================================================
+// 입력 필드 상태 관리
+// ============================================================================
+
+/**
+ * 채팅 입력 필드 비활성화
+ * @param {string} reason - 비활성화 이유 (플레이스홀더에 표시)
+ */
+function disableChatInput(reason = "로딩 중...") {
+  if (userMessageInput) {
+    userMessageInput.disabled = true;
+    userMessageInput.placeholder = reason;
+    userMessageInput.classList.add('disabled');
+  }
+  if (sendBtn) {
+    sendBtn.disabled = true;
+  }
+  console.log('[입력] 비활성화:', reason);
+}
+
+/**
+ * 채팅 입력 필드 활성화
+ */
+function enableChatInput() {
+  if (userMessageInput) {
+    userMessageInput.disabled = false;
+    userMessageInput.placeholder = "메시지를 입력하세요...";
+    userMessageInput.classList.remove('disabled');
+  }
+  if (sendBtn) {
+    sendBtn.disabled = false;
+  }
+  console.log('[입력] 활성화');
 }
 
 // 메시지 전송 함수 (EventSource 스트리밍 사용)
@@ -366,12 +607,31 @@ async function sendMessage(isInitial = false) {
             updateBotMessageContent(messageId, fullResponse);
 
           } else if (event.type === 'metadata') {
-            // 메타데이터 저장 (스탯 업데이트용)
+            // 메타데이터 즉시 처리 (스탯 업데이트 및 알림)
             metadata = event.content;
+            handleChatMetadata(metadata);
 
           } else if (event.type === 'done') {
             // 스트리밍 완료
             console.log('[STREAM] 완료');
+
+          } else if (event.type === 'event_update') {
+            // 이벤트 업데이트 (비동기)
+            console.log('[EVENT] 이벤트 업데이트');
+            const eventInfo = event.content;
+            if (eventInfo && eventInfo.choices) {
+              showEventWithOptions(eventInfo);
+            } else if (eventInfo) {
+              showEventNotification(eventInfo);
+            }
+
+          } else if (event.type === 'hint_update') {
+            // 힌트 업데이트 (비동기, 컨텍스트 포함)
+            console.log('[HINT] 힌트 업데이트');
+            const hintInfo = event.content;
+            if (hintInfo && hintInfo.hint) {
+              showHintWithContext(hintInfo);
+            }
 
           } else if (event.type === 'error') {
             // 오류 처리
@@ -384,10 +644,6 @@ async function sendMessage(isInitial = false) {
           console.error('[STREAM] 이벤트 파싱 실패:', e, eventStr);
         }
       }
-    }
-
-    if (metadata) {
-      handleChatMetadata(metadata);
     }
 
   } catch (error) {
@@ -652,7 +908,7 @@ function handleChatMetadata(data) {
     console.log("💖 친밀도 레벨:", data.debug.game_state.intimacy_level);
 
     console.group("📊 스탯 변화");
-    if (Object.keys(data.debug.stat_changes.changes).length > 0) {
+    if (data.debug.stat_changes && Object.keys(data.debug.stat_changes.changes).length > 0) {
       console.log("변화량:", data.debug.stat_changes.changes);
       console.log("이유:", data.debug.stat_changes.reason);
       console.table({
@@ -664,7 +920,7 @@ function handleChatMetadata(data) {
     }
     console.groupEnd();
 
-    if (data.debug.event_check.triggered) {
+    if (data.debug.event_check?.triggered) {
       console.log("🎭 이벤트 발생:", data.debug.event_check.event_name);
     }
 
@@ -865,6 +1121,11 @@ function updateStatBar(statName, value) {
     return;
   }
 
+  // 이전 값과 비교하여 변화 감지
+  const previousValue = AppState.previousStats[statName];
+  const hasChanged = previousValue !== null && previousValue !== value;
+  const change = hasChanged ? value - previousValue : 0;
+
   // 수정: 모든 스탯의 최대값이 100이므로, 텍스트를 '값/100' 형식으로 업데이트합니다.
   statValue.textContent = `${value}/100`;
   statBar.style.width = `${value}%`;
@@ -878,6 +1139,49 @@ function updateStatBar(statName, value) {
     statBar.style.backgroundColor = "#FF9800"; // 낮음 (주황색)
   } else {
     statBar.style.backgroundColor = "#F44336"; // 매우 낮음 (빨간색)
+  }
+
+  // 변화가 있으면 애니메이션 적용
+  if (hasChanged && change !== 0) {
+    // 기존 애니메이션 클래스 제거
+    statBar.classList.remove('stat-increased', 'stat-decreased');
+
+    // 새 애니메이션 클래스 추가
+    const animationClass = change > 0 ? 'stat-increased' : 'stat-decreased';
+    statBar.classList.add(animationClass);
+
+    // 변화량 표시 인디케이터 생성
+    createStatChangeIndicator(statBar, change);
+
+    // 애니메이션 종료 후 클래스 제거
+    setTimeout(() => {
+      statBar.classList.remove(animationClass);
+    }, 600);
+  }
+
+  // 현재 값을 이전 값으로 저장
+  AppState.previousStats[statName] = value;
+}
+
+function createStatChangeIndicator(statBar, change) {
+  // 이유: 스탯 변화량을 시각적으로 표시하는 부유 인디케이터를 생성합니다.
+  const indicator = document.createElement('div');
+  indicator.className = 'stat-change-indicator';
+  indicator.textContent = change > 0 ? `+${change}` : `${change}`;
+  indicator.style.color = change > 0 ? '#4CAF50' : '#F44336';
+
+  // 스탯 바의 부모 요소(stat-bar-container)에 추가
+  const container = statBar.parentElement;
+  if (container) {
+    container.style.position = 'relative'; // 위치 기준 설정
+    container.appendChild(indicator);
+
+    // 애니메이션 종료 후 제거
+    setTimeout(() => {
+      if (indicator.parentElement) {
+        indicator.remove();
+      }
+    }, 1200);
   }
 }
 /* <<< 수정 끝 >>> */
@@ -904,6 +1208,9 @@ function showEventNotification(eventInfo) {
   `;
 
   container.appendChild(notification);
+
+  // 7초 후 자동 제거
+  autoRemoveNotification(notifId, 7000);
 }
 
 // 힌트 알림 표시 (스탯 패널 아래)
@@ -928,6 +1235,37 @@ function showHintNotification(hint) {
   `;
 
   container.appendChild(notification);
+
+  // 7초 후 자동 제거
+  autoRemoveNotification(notifId, 7000);
+}
+
+// 힌트 알림 표시 (컨텍스트 포함)
+function showHintWithContext(hintInfo) {
+  const notifId = `notif-${AppState.counters.notification++}`;
+  const container = document.getElementById("notifications-container");
+  if (!container) return;
+
+  const notification = document.createElement("div");
+  notification.className = "notification-item hint";
+  notification.id = notifId;
+  notification.innerHTML = `
+    <div class="notification-header" onclick="toggleNotification('${notifId}')">
+      <div class="notification-title">
+        💡 힌트
+      </div>
+      <button class="notification-close" onclick="removeNotification(event, '${notifId}')">×</button>
+    </div>
+    <div class="notification-body">
+      ${hintInfo.hint}
+      ${hintInfo.related_message ? `<br><small style="opacity: 0.7;">💬 관련 대화: "${hintInfo.related_message}"</small>` : ''}
+    </div>
+  `;
+
+  container.appendChild(notification);
+
+  // 7초 후 자동 제거
+  autoRemoveNotification(notifId, 7000);
 }
 
 // 알림 펼치기/접기
@@ -1100,26 +1438,13 @@ async function closeOnboarding() {
     modal.classList.remove('active');
   }
 
-  // 온보딩 종료 후 게임 초기화
-  setTimeout(async () => {
-    // 1. 게임 상태 가져오기 (월 정보 포함)
-    await fetchGameState();
+  console.log('[온보딩] 종료, 앱 초기화 시작');
 
-    // 2. 3월 가이드 메시지 표시
-    show3MonthGuide();
+  // 3월 가이드 표시
+  show3MonthGuide();
 
-    // 3. 스토리북 확인
-    await checkInitialStorybook();
-
-    // 4. 초기 메시지 요청 (스토리북이 없을 때만)
-    // 스토리북이 있으면 스토리북 완료 후 startNewMonth()에서 자동으로 첫 메시지 생성
-    setTimeout(() => {
-      if (chatLog && chatLog.childElementCount === 0 && !AppState.storybook.isProcessing) {
-        console.log("초기 메시지 요청 (스토리북 없음)");
-        sendMessage(true);
-      }
-    }, 500);
-  }, 500); // 모달이 완전히 닫힌 후 처리
+  // 앱 초기화 (async/await로 명확한 순서 보장)
+  await initializeApp();
 }
 
 // 다음 페이지
@@ -1547,6 +1872,9 @@ async function transitionToChatMode(storybookId = null) {
   // 스토리북 UI 숨기기
   hideStorybookInBook();
 
+  // 입력 필드 활성화 (채팅 모드 진입)
+  enableChatInput();
+
   // 월 시작 처리 (채팅 화면 초기화 + 시스템 메시지)
   // storybookId가 null이면 이미 처리되었으므로 생략
   if (storybookId) {
@@ -1665,9 +1993,71 @@ async function checkInitialStorybook() {
 // 페이지 로드
 // ============================================================================
 
+/**
+ * 앱 초기화 함수 (async/await 기반)
+ * - setTimeout 제거, 명확한 순서 보장
+ * - 로딩 오버레이 관리
+ * - 입력 필드 상태 관리
+ */
+async function initializeApp() {
+  const overlay = document.getElementById('init-overlay');
+
+  try {
+    // 초기화 시작
+    AppState.initialization.status = 'loading';
+    console.log('[초기화] 시작');
+
+    // 입력 필드 비활성화
+    disableChatInput('게임을 불러오는 중...');
+
+    // 병렬로 스토리북 확인 및 게임 상태 로드
+    await Promise.all([
+      checkInitialStorybook(),
+      fetchGameState()
+    ]);
+
+    // 초기화 완료
+    AppState.initialization.status = 'ready';
+    console.log('[초기화] 완료');
+
+    // 오버레이 숨기기 (부드러운 전환)
+    if (overlay) {
+      overlay.classList.remove('active');
+    }
+
+    // 채팅 모드인 경우에만 입력 활성화 및 초기 메시지 전송
+    if (!AppState.storybook.isActive) {
+      enableChatInput();
+
+      // 채팅 로그가 비어있으면 초기 메시지 전송
+      if (chatLog && chatLog.childElementCount === 0) {
+        console.log('[초기화] 초기 메시지 전송');
+        sendMessage(true);
+      }
+    }
+    // 스토리북 모드인 경우 입력은 비활성화 상태 유지
+
+  } catch (error) {
+    // 초기화 실패 처리
+    AppState.initialization.status = 'error';
+    console.error('[초기화] 실패:', error);
+
+    if (overlay) {
+      const overlayText = overlay.querySelector('p');
+      if (overlayText) {
+        overlayText.textContent = '오류가 발생했습니다. 새로고침해주세요.';
+      }
+    }
+
+    showError('초기화에 실패했습니다. 페이지를 새로고침해주세요.', error);
+  }
+}
+
 // 페이지 로드 시 초기화
 window.addEventListener("load", async () => {
   console.log("페이지 로드 완료");
+
+  // Training UI 초기화
   initializeTrainingUI();
 
   // 초기 월 설정 (기본값: 3월)
@@ -1676,24 +2066,16 @@ window.addEventListener("load", async () => {
   // 1. 온보딩 체크 및 표시 (최우선)
   const onboardingShown = checkAndShowOnboarding();
 
-  // 2. 온보딩을 표시하지 않은 경우에만 스토리북/채팅 초기화
   if (!onboardingShown) {
-    // 초기 스토리북 확인
-    await checkInitialStorybook();
-
-    // 게임 상태 가져오기 (월 정보 업데이트)
-    await fetchGameState();
-
-    // 초기 메시지 요청 (스토리북이 없을 때만)
-    // 스토리북이 있으면 스토리북 완료 후 startNewMonth()에서 자동으로 첫 메시지 생성
-    setTimeout(() => {
-      if (chatLog && chatLog.childElementCount === 0 && !AppState.storybook.isProcessing) {
-        console.log("초기 메시지 요청 (스토리북 없음)");
-        sendMessage(true);
-      }
-    }, 500);
+    // 2. 온보딩을 표시하지 않은 경우 앱 초기화
+    await initializeApp();
+  } else {
+    // 3. 온보딩이 표시된 경우 오버레이 숨김 (온보딩 종료 시 initializeApp 호출)
+    const overlay = document.getElementById('init-overlay');
+    if (overlay) {
+      overlay.classList.remove('active');
+    }
   }
-  // 온보딩이 표시된 경우, closeOnboarding()에서 3월 가이드와 스토리북 체크를 처리
 });
 
 /**
@@ -1736,4 +2118,109 @@ function showEventWithOptions(eventInfo) {
 }
 
 // 5월 이벤트 선택지 시스템 제거됨 - flags로 단순화됨
+
+// ============================================================================
+// 특별한 순간 모달
+// ============================================================================
+
+/**
+ * 특별한 순간 모달 열기
+ */
+async function openMomentsModal() {
+  const modal = document.getElementById('moments-modal');
+  if (!modal) return;
+
+  modal.classList.add('open');
+
+  // 카드 로드 및 렌더링
+  await loadAndRenderMoments();
+}
+
+/**
+ * 특별한 순간 모달 닫기
+ */
+function closeMomentsModal() {
+  const modal = document.getElementById('moments-modal');
+  if (modal) {
+    modal.classList.remove('open');
+  }
+}
+
+/**
+ * 특별한 순간 카드 로드 및 렌더링
+ */
+async function loadAndRenderMoments() {
+  try {
+    const response = await fetch(`/api/moments?username=${username}`);
+    const data = await response.json();
+
+    if (data.success) {
+      renderMomentCards(data.moments);
+    } else {
+      console.error('[MOMENTS] 로드 실패:', data.error);
+    }
+  } catch (error) {
+    console.error('[MOMENTS] 로드 오류:', error);
+  }
+}
+
+/**
+ * 특별한 순간 카드 렌더링
+ * @param {Array} moments - 카드 데이터 배열
+ */
+function renderMomentCards(moments) {
+  const list = document.getElementById('moments-list');
+  if (!list) return;
+
+  if (!moments || moments.length === 0) {
+    list.innerHTML = `
+      <div style="text-align: center; padding: 40px;">
+        <p style="color: #999; margin: 0;">아직 특별한 순간이 기록되지 않았습니다.</p>
+        <p style="color: #999; font-size: 0.9rem; margin-top: 8px;">강태와 함께 소중한 기억을 만들어보세요!</p>
+      </div>
+    `;
+    return;
+  }
+
+  // 최신순 정렬 (timestamp 기준)
+  const sortedMoments = moments.sort((a, b) =>
+    new Date(b.timestamp) - new Date(a.timestamp)
+  );
+
+  list.innerHTML = sortedMoments.map(moment => {
+    if (moment.type === 'event') {
+      // 이벤트 카드 (이미지 포함)
+      return `
+        <div class="moment-card">
+          <img src="${moment.image_url}" alt="${moment.title}" class="moment-card-image" onerror="this.style.display='none'">
+          <div class="moment-card-content" style="color: #1A1A1A;">
+            <div class="moment-card-header">
+              <h3 class="moment-card-title" style="color: #1A1A1A;">${moment.title}</h3>
+              <span class="moment-card-month" style="color: #666;">${moment.month}월</span>
+            </div>
+            <p class="moment-card-description" style="color: #555;">${moment.description}</p>
+          </div>
+        </div>
+      `;
+    } else {
+      // 마일스톤 카드 (그라데이션 배경)
+      const visual = moment.visual_data || {};
+      const gradient = visual.gradient || ['#4A90E2', '#50C878'];
+      const emoji = visual.emoji || '⭐';
+
+      return `
+        <div class="moment-card milestone" style="--gradient-start: ${gradient[0]}; --gradient-end: ${gradient[1]};">
+          <div class="moment-card-content" style="color: #1A1A1A;">
+            <div class="moment-card-emoji">${emoji}</div>
+            <div class="moment-card-header">
+              <h3 class="moment-card-title" style="color: #1A1A1A;">${moment.title}</h3>
+              <span class="moment-card-month" style="color: #1A1A1A;">${moment.month}월</span>
+            </div>
+            <p class="moment-card-description" style="color: #1A1A1A;">${moment.description}</p>
+          </div>
+        </div>
+      `;
+    }
+  }).join('');
+}
 

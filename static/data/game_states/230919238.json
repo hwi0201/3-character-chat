@@ -1,0 +1,121 @@
+{
+  "session_id": "230919238",
+  "current_month": 4,
+  "current_day": 1,
+  "stats": {
+    "intimacy": 0,
+    "mental": 35,
+    "stamina": 30,
+    "batting": 64,
+    "speed": 49,
+    "defense": 59
+  },
+  "flags": {
+    "backstory_revealed": false,
+    "tournament_result": "strikeout",
+    "steal_phobia_overcome": false
+  },
+  "event_history": [],
+  "special_moments": [],
+  "training_schedule": {},
+  "training_history": [
+    {
+      "month": 4,
+      "intensity": 100,
+      "intensity_label": "High-Intensity Training",
+      "focuses": [
+        "batting",
+        "speed",
+        "defense"
+      ],
+      "stat_changes": {
+        "batting": 6,
+        "speed": 6,
+        "defense": 6
+      },
+      "stamina_change": -20,
+      "summary": "Month 4 High-Intensity Training focused on Batting, Speed, Defense. Result: Batting +6, Speed +6, Defense +6, Stamina -20."
+    },
+    {
+      "month": 4,
+      "intensity": 100,
+      "intensity_label": "High-Intensity Training",
+      "focuses": [
+        "batting",
+        "speed",
+        "defense"
+      ],
+      "stat_changes": {
+        "batting": 6,
+        "speed": 6,
+        "defense": 6
+      },
+      "stamina_change": -20,
+      "summary": "Month 4 High-Intensity Training focused on Batting, Speed, Defense. Result: Batting +6, Speed +6, Defense +6, Stamina -20."
+    },
+    {
+      "month": 4,
+      "intensity": 100,
+      "intensity_label": "High-Intensity Training",
+      "focuses": [
+        "batting",
+        "speed",
+        "defense"
+      ],
+      "stat_changes": {
+        "batting": 6,
+        "speed": 6,
+        "defense": 6
+      },
+      "stamina_change": -20,
+      "summary": "Month 4 High-Intensity Training focused on Batting, Speed, Defense. Result: Batting +6, Speed +6, Defense +6, Stamina -20."
+    },
+    {
+      "month": 4,
+      "intensity": 100,
+      "intensity_label": "High-Intensity Training",
+      "focuses": [
+        "batting",
+        "speed",
+        "defense"
+      ],
+      "stat_changes": {
+        "batting": 6,
+        "speed": 6,
+        "defense": 6
+      },
+      "stamina_change": -20,
+      "summary": "Month 4 High-Intensity Training focused on Batting, Speed, Defense. Result: Batting +6, Speed +6, Defense +6, Stamina -20."
+    },
+    {
+      "month": 4,
+      "intensity": 0,
+      "intensity_label": "Recovery Session",
+      "focuses": [
+        "batting",
+        "speed",
+        "defense"
+      ],
+      "stat_changes": {},
+      "stamina_change": 10,
+      "summary": "Month 4 Recovery Session focused on Batting, Speed, Defense. Result: Stamina +10."
+    }
+  ],
+  "current_phase": "chat",
+  "current_storybook_id": null,
+  "storybook_completed": {
+    "3_opening": true,
+    "3_to_4_transition": true,
+    "4_opening": true
+  },
+  "previous_month_stats": {
+    "intimacy": 0,
+    "mental": 35,
+    "stamina": 100,
+    "batting": 40,
+    "speed": 25,
+    "defense": 35
+  },
+  "next_action": null,
+  "training_count_this_month": 5
+}

@@ -469,17 +469,31 @@ class ChatbotService:
 [캐릭터 행동 가이드]
 {self._get_behavior_guide(game_state)}
 """
+            # 훈련 시스템이 활성화된 월(4~7월)에만 훈련 가이드 추가
+            TRAINABLE_MONTHS = [4, 5, 6, 7]
             training_summary = game_state.get_recent_training_summary()
-            if training_summary:
+
+            if training_summary and game_state.current_month in TRAINABLE_MONTHS:
                 state_info += f"""
 
 [최근 훈련 기록]
 {training_summary}
 
 [훈련 응답 가이드]
-- 최근 훈련에서 느낀 몸 상태와 감정을 자연스럽게 언급합니다.
-- 강도가 높았다면 회복에 대한 언급도 덧붙입니다.
+- 사용자가 훈련에 대해 물어보면 최근 훈련에서 느낀 몸 상태를 언급합니다.
+- 단, 사용자가 다른 주제를 꺼내면 그 주제에 집중하세요.
 """
+            elif game_state.current_month == 3:
+                # 3월은 아이스브레이킹 단계
+                state_info += """
+
+[3월 특별 가이드]
+- 아직 훈련 시스템이 시작되지 않았습니다.
+- 코치님과 서로를 알아가는 시간입니다.
+- 야구에 대한 열정, 과거 경험, 드래프트에 대한 두려움 등을 자연스럽게 대화하세요.
+- 훈련 계획에 대해 먼저 언급하지 마세요.
+"""
+
             system_parts.append(state_info)
 
         # 3. RAG 검색 결과(context)가 있으면 프롬프트에 추가
@@ -584,7 +598,7 @@ class ChatbotService:
             # [1단계] 초기 메시지 처리
             if user_message.strip().lower() == "init":
                 bot_name = self.config.get('name', '챗봇')
-                greeting = "왜 오셨어요. 알아서 훈련하겠다고 말씀드렸잖아요."
+                greeting = "다시 돌아오셨네요."
                 print(f"[BOT] (초기 인사) {greeting}")
                 print(f"{'='*50}\n")
                 return {
@@ -794,7 +808,7 @@ class ChatbotService:
             # [1단계] 초기 메시지 처리
             if user_message.strip().lower() == "init":
                 bot_name = self.config.get('name', '챗봇')
-                greeting = "왜 오셨어요. 알아서 훈련하겠다고 말씀드렸잖아요."
+                greeting = "다시 돌아오셨네요."
                 print(f"[BOT] (초기 인사) {greeting}")
                 print(f"{'='*50}\n")
 
@@ -866,7 +880,7 @@ class ChatbotService:
             print(f"[BOT] {full_response[:100]}...")
             print(f"[MEMORY] ✓ Conversation automatically saved to session '{username}'")
 
-            # [6단계] 스탯 변화 계산 및 적용
+            # [6단계] 스탯 변화 계산 및 적용 (빠름)
             game_state = self.game_manager.get_or_create(username)
             old_stats = game_state.stats.to_dict()
 
@@ -879,6 +893,29 @@ class ChatbotService:
             if stat_changes:
                 game_state.stats.apply_changes(stat_changes)
                 print(f"[STAT] ✓ Stat changes applied: {stat_changes}")
+
+                # 마일스톤 체크 (친밀도, 스탯 조합)
+                from services.moment_manager import get_moment_manager
+                moment_mgr = get_moment_manager()
+
+                new_stats = game_state.stats.to_dict()
+
+                # 친밀도 마일스톤 체크
+                intimacy_cards = moment_mgr.check_and_create_intimacy_milestones(
+                    game_state=game_state,
+                    old_intimacy=old_stats.get('intimacy', 0),
+                    new_intimacy=new_stats.get('intimacy', 0)
+                )
+                moment_mgr.add_cards_to_game_state(game_state, intimacy_cards)
+
+                # 스탯 조합 마일스톤 체크
+                stat_combo_cards = moment_mgr.check_and_create_stat_combo_milestones(
+                    game_state=game_state,
+                    old_stats=old_stats,
+                    new_stats=new_stats
+                )
+                moment_mgr.add_cards_to_game_state(game_state, stat_combo_cards)
+
             else:
                 print(f"[STAT] No stat changes")
 
@@ -886,22 +923,44 @@ class ChatbotService:
             self.game_manager.save(username)
             print(f"[GAME] ✓ Game state saved for '{username}'")
 
-            # [8단계] 이벤트 감지 및 힌트 제공
+            # [8단계] done 신호 즉시 전송 ⭐
+            yield {
+                'type': 'done',
+                'content': ''
+            }
+
+            # [9단계] 스탯 메타데이터 즉시 전송 (빠름)
             conversation_history = self.get_session_history(username).messages
 
+            yield {
+                'type': 'metadata',
+                'content': {
+                    'debug': {
+                        'game_state': {
+                            'current_month': game_state.current_month,
+                            'current_day': game_state.current_day,
+                            'stats': game_state.stats.to_dict(),
+                            'intimacy_level': self.stat_calculator.get_intimacy_level(game_state.stats.intimacy),
+                            'months_until_draft': game_state.get_months_until_draft(),
+                        },
+                        'stat_changes': {
+                            'changes': stat_changes,
+                            'reason': stat_reason,
+                            'old_stats': old_stats,
+                            'new_stats': game_state.stats.to_dict()
+                        },
+                        'conversation_count': len(conversation_history),
+                        'event_history': game_state.event_history
+                    }
+                }
+            }
+
+            # [10단계] 이벤트 감지 (백그라운드, 느림 - 타임아웃 3초)
             event_info = self.event_detector.check_event(
                 game_state=game_state,
                 conversation_history=conversation_history,
                 recent_messages=10
             )
-
-            hint = None
-            if len(conversation_history) >= 5:
-                hint = self.event_detector.get_hint(
-                    game_state=game_state,
-                    conversation_history=conversation_history,
-                    stuck_threshold=5
-                )
 
             if event_info:
                 print(f"[EVENT] ✓ Event triggered: {event_info['event_name']}")
@@ -920,52 +979,33 @@ class ChatbotService:
                 # 게임 상태 저장
                 self.game_manager.save(username)
 
-            if hint:
-                print(f"[HINT] ✓ Hint provided: {hint}")
-
-            # [9단계] 메타데이터 전송
-            print(f"{'='*50}\n")
-
-            metadata = {
-                'debug': {
-                    'game_state': {
-                        'current_month': game_state.current_month,
-                        'current_day': game_state.current_day,
-                        'stats': game_state.stats.to_dict(),
-                        'intimacy_level': self.stat_calculator.get_intimacy_level(game_state.stats.intimacy),
-                        'months_until_draft': game_state.get_months_until_draft(),
-                    },
-                    'stat_changes': {
-                        'changes': stat_changes,
-                        'reason': stat_reason,
-                        'old_stats': old_stats,
-                        'new_stats': game_state.stats.to_dict()
-                    },
-                    'event_check': {
-                        'triggered': event_info is not None,
-                        'event_name': event_info['event_name'] if event_info else None
-                    },
-                    'hint_provided': hint is not None,
-                    'conversation_count': len(conversation_history),
-                    'event_history': game_state.event_history
+                # 이벤트 업데이트 전송 ⭐
+                yield {
+                    'type': 'event_update',
+                    'content': event_info
                 }
-            }
 
-            if event_info:
-                metadata['event'] = event_info
-            if hint:
-                metadata['hint'] = hint
+            # [11단계] 힌트 제공 (백그라운드, 느림 - 타임아웃 3초)
+            if len(conversation_history) >= 5:
+                hint = self.event_detector.get_hint(
+                    game_state=game_state,
+                    conversation_history=conversation_history,
+                    stuck_threshold=5
+                )
 
-            yield {
-                'type': 'metadata',
-                'content': metadata
-            }
+                if hint:
+                    print(f"[HINT] ✓ Hint provided: {hint}")
 
-            # [10단계] 완료 신호
-            yield {
-                'type': 'done',
-                'content': ''
-            }
+                    # 힌트 업데이트 전송 (컨텍스트 포함) ⭐
+                    yield {
+                        'type': 'hint_update',
+                        'content': {
+                            'hint': hint,
+                            'related_message': full_response[:50] + "..."
+                        }
+                    }
+
+            print(f"{'='*50}\n")
 
         except Exception as e:
             print(f"[ERROR] 스트리밍 응답 생성 실패: {e}")

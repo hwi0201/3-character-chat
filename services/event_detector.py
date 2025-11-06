@@ -191,7 +191,7 @@ class EventDetector:
         chain = prompt | self.llm
 
         try:
-            response = chain.invoke({
+            response = chain.with_config({"timeout": 3.0}).invoke({
                 "event_name": event_def['name'],
                 "conditions": "\n".join([f"- {cond}" for cond in event_def['conditions']]),
                 "current_month": game_state.current_month,
@@ -209,6 +209,9 @@ class EventDetector:
             # 확신도가 0.7 이상일 때만 발동
             return (triggered and confidence >= 0.7, reason)
 
+        except TimeoutError:
+            print(f"[WARNING] 이벤트 조건 분석 타임아웃 (3초 초과)")
+            return (False, "타임아웃")
         except (json.JSONDecodeError, KeyError) as e:
             print(f"[WARNING] 이벤트 조건 분석 실패 ({type(e).__name__}): {e}")
             return (False, "분석 실패")
@@ -285,7 +288,7 @@ class EventDetector:
         chain = prompt | self.llm
 
         try:
-            response = chain.invoke({
+            response = chain.with_config({"timeout": 3.0}).invoke({
                 "event_name": event_def['name'],
                 "conditions": "\n".join([f"- {cond}" for cond in event_def['conditions']]),
                 "conversation_summary": conversation_summary
@@ -301,6 +304,8 @@ class EventDetector:
                 if hints:
                     return f"💡 힌트: {random.choice(hints)}"
 
+        except TimeoutError:
+            print(f"[WARNING] 힌트 생성 타임아웃 (3초 초과)")
         except (json.JSONDecodeError, KeyError) as e:
             print(f"[WARNING] 힌트 생성 실패 ({type(e).__name__}): {e}")
 

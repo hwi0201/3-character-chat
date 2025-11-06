@@ -12,19 +12,7 @@
           "image": "./static/images/chatbot/3_month.png"
         },
         {
-          "text": "\"...새 코치님이라고요?\"\n\n강태가 당신을 차갑게 바라본다. 경계하는 눈빛이 역력하다.\n\n\"어차피 또 금방 그만두실 거면서...\"\n\n그의 목소리에는 배신감이 묻어있다. 전 코치가 갑자기 그만뒀다는 소문을 들은 것 같다.",
-          "image": "./static/images/chatbot/3_month.png"
-        },
-        {
-          "text": "\"전 코치님도 처음엔 그렇게 말했어요. '끝까지 책임지겠다'고.\"\n\n강태가 고개를 돌린다.\n\n\"근데 결국... 저 혼자 남았죠.\"\n\n그의 등이 외로워 보인다. 버림받는 것에 익숙해진 듯한 모습이 마음 아프다.",
-          "image": "./static/images/chatbot/3_month.png"
-        },
-        {
-          "text": "\"9월 드래프트까지 딱 6개월 남았어요.\"\n\n강태가 다시 당신을 돌아본다. 이번엔 조금 다른 눈빛이다.\n\n\"...믿어도 될까요, 코치님?\"\n\n떨리는 목소리. 그는 여전히 희망을 품고 있다. 다만 너무 많이 다쳐서 쉽게 마음을 열지 못할 뿐이다.",
-          "image": "./static/images/chatbot/3_month.png"
-        },
-        {
-          "text": "이것이 당신과 서강태의 첫 만남이다.\n\n앞으로 6개월. 그와 함께 땀 흘리고, 좌절하고, 성장하며 프로야구 드래프트를 준비해야 한다.\n\n가장 중요한 것은 그의 신뢰를 얻는 것. 진심 어린 대화로 서서히 마음의 문을 열어야 한다.\n\n자, 이제 강태와 이야기를 시작해보자.",
+          "text": "\"...새 코치님이라고요?\"\n\n강태가 당신을 차갑게 바라본다. 경계하는 눈빛이 역력하다.\n\n앞으로 6개월. 그와 함께 땀 흘리고, 좌절하고, 성장하며 프로야구 드래프트를 준비해야 한다.\n\n가장 중요한 것은 그의 신뢰를 얻는 것. 진심 어린 대화로 서서히 마음의 문을 열어야 한다.\n\n자, 이제 강태와 이야기를 시작해보자.",
           "image": "./static/images/chatbot/3_month.png"
         }
       ],
@@ -44,7 +32,7 @@
           "image": "./static/images/chatbot/3_month.png"
         },
         {
-          "text": "이제 4월이다.\n\n날씨가 더 따뜻해지고, 본격적인 시즌이 시작된다.\n\n강태와 함께 더 많은 시간을 보내며, 그의 기량을 끌어올려야 한다.\n\n드래프트까지 이제 5개월. 시간이 빠르게 흘러간다.",
+          "text": "강태와 간단한 소개를 하며 서로를 알아가는 시간이었다. 앞으로도 강태와 친밀도를 쌓아가며 훈련을 시작하자.",
           "image": "./static/images/chatbot/3_month.png"
         }
       ],
@@ -66,10 +54,6 @@
         },
         {
           "text": "\"하...알겠어요. 코치님 말대로 해볼게요.\"\n\n강태가 결국 고개를 끄덕인다. 당신에 대한 신뢰가 조금씩 쌓이고 있다.\n\n\"근데 정말 효과 있는 거죠?\"\n\n그의 눈빛에는 기대와 불안이 공존한다.",
-          "image": "./static/images/chatbot/4_month.png"
-        },
-        {
-          "text": "4월, 기초부터 다시 시작한다.\n\n때론 지루하고, 때론 답답할 것이다. 하지만 탄탄한 기초는 결국 빛을 발한다.\n\n강태와의 대화를 통해 그를 격려하고, 때론 엄격하게 지도하라.\n\n드래프트까지의 여정은 이제 시작일 뿐이다.",
           "image": "./static/images/chatbot/4_month.png"
         }
       ],
@@ -104,23 +88,23 @@
       "pages": [
         {
           "text": "5월의 어느 날, 당신은 텅 빈 훈련장을 마주했다.\n\n항상 가장 먼저 나와 있던 강태가 보이지 않는다. 그의 락커는 굳게 닫혀있다.",
-          "image": null
+          "image": "./static/images/chatbot/5_month_stadium.png"
         },
         {
           "text": "전화를 걸어보지만, 신호음만 반복될 뿐 받지 않는다.\n\n무슨 일이 생긴 걸까? 어제 훈련까지만 해도 괜찮아 보였는데...\n\n불안한 마음에, 당신은 결국 그의 집으로 직접 찾아가 보기로 결심한다.",
-          "image": null
+          "image": "./static/images/chatbot/5_month_stadium.png"
         },
         {
           "text": "당신은 강태의 집 문을 조심스럽게 두드렸다.\n\n잠시 후, 문이 열리고 낯선 중년 여성이 당신을 바라본다.\n\n\"...누구세요? 아, 혹시 강태 코치님?\"",
-          "image": null
+          "image": "./static/images/chatbot/5_month_house.png"
         },
         {
-          "text": "강태의 어머니였다. 그녀는 당신을 안으로 들인 후, 무거운 표정으로 입을 열었다.\n\n\"우리 강태가... 중학교 때 코치한테 크게 배신당했어요. 걔 재능 이용해서 팀 성적만 올리려고, 다친 발목으로 계속 뛰게 해서 부상을 악화시켰죠.\"",
-          "image": null
+          "text": "강태의 어머니였다. 그녀는 당신을 안으로 들인 후, 무거운 표정으로 입을 열었다.\n\n\"우리 강태가... 믿었던 코치한테 안 좋은 일을 겪었어요. 아이의 재능을 이용해서 팀 성적만 올리려고 했죠… 다친 발목으로 계속 뛰느라 결국 부상이 심해졌어요.\"",
+          "image": "./static/images/chatbot/5_month_mom.png"
         },
         {
-          "text": "\"결국 약속했던 명문고 추천도 다른 애한테 줘버렸어요. '부상 때문에 어쩔 수 없었다'면서...\"\n\n\"강태는 그때 이후로, 자기 몸과 재능이 이용당했다고만 생각해요. 그래서 지금 코치님도... 절대 믿지 못하는 겁니다.\"",
-          "image": null
+          "text": "\"결국 약속했던 명문고 추천도 다른 애한테 줘버렸어요. '부상 때문에 어쩔 수 없었다'면서...\"\n\n\"강태는 그때 이후로, 자기 몸과 재능이 이용당했다고만 생각해요. 그래서 지금 코치님도… 믿기 힘들어 하는 것 같아요…\"",
+          "image": "./static/images/chatbot/5_month_mom.png"
         },
         {
           "text": "그때, 현관문이 열리며 훈련복 차림의 강태가 들어왔다. 당신과 어머니를 번갈아 보던 그의 얼굴이 굳어졌다.\n\n\"? 코치님이 왜 여기에... 어디까지 들으신 거죠.\"",
@@ -137,11 +121,11 @@
       "pages": [
         {
           "text": "힘들었던 5월이 지나간다.\n\n강태의 깊은 상처를 알게 된 당신. 그리고 그런 당신에게 조금씩 마음을 열기 시작한 강태.\n\n두 사람의 관계는 이전과는 비교할 수 없을 정도로 단단해졌다.",
-          "image": null
+          "image": "./static/images/chatbot/5_month.png"
         },
         {
-          "text": "\"코치님. ...감사합니다.\"\n\n훈련이 끝난 뒤, 강태가 처음으로 진심이 담긴 인사를 건넨다.\n\n\"이제... 도망치지 않을게요.\"\n\n그의 눈빛은 더 이상 흔들리지 않았다.",
-          "image": null
+          "text": "\"코치님. ...감사합니다.\"\n\n강태가 처음으로 진심이 담긴 인사를 건넨다.\n\n\"이제... 도망치지 않을게요.\"\n\n그의 눈빛은 더 이상 흔들리지 않았다.",
+          "image": "./static/images/chatbot/5_month.png"
         }
       ],
       "completion_action": "show_next_storybook",
@@ -158,7 +142,7 @@
           "image": "./static/images/chatbot/6_month.png"
         },
         {
-          "text": "\"코치님과 함께라면 뭐든 할 수 있을 것 같아요.\"\n\n강태가 웃으며 말한다. 이제 그는 당신을 완전히 신뢰한다.\n\n남은 시간, 더욱 집중해서 그를 최고로 만들자.",
+          "text": "\"코치님 말 들으면 이제 잘할 수 있겠죠?\"\n\n강태가 웃으며 말한다.\n\n남은 시간, 더욱 집중해서 그를 최고로 만들자.",
           "image": "./static/images/chatbot/6_month.png"
         }
       ],
@@ -213,12 +197,12 @@
       "title": "8월 - 결전의 타석",
       "pages": [
         {
-          "text": "8월, 대통령배 전국고교야구대회 결승.\n\n팽팽한 접전 끝에 9회 말, 2사 만루 상황. 스코어는 3:4로 뒤지고 있다.\n\n그리고 다음 타석은 서강태. 하지만 이전 타석까지 계속 삼진만 당해 표정이 어둡다.",
+          "text": "8월, 대통령배 전국고교야구대회 결승.\n\n팽팽한 접전 끝에 9회 말, 2사 만루 상황. 스코어는 4:3로 뒤지고 있다.\n\n그리고 다음 타석은 서강태. 하지만 이전 타석까지 계속 삼진만 당해 표정이 어둡다.",
           "image": "./static/images/chatbot/ballpark.png"
         },
         {
-          "text": "강태가 더그아웃에 앉아 배트를 쥔 채 고개를 숙이고 있다. 그의 눈빛이 흔들리고 있다.\n\n팀의 운명이, 그리고 강태의 미래가 다음 타석에 달려있다.\n\n이제, 타석에 오르기 전인 그에게 다가가 조언을 해주자.",
-          "image": null
+          "text": "강태가 더그아웃에 앉아 고개를 숙이고 있다. 그의 눈빛이 흔들리고 있다.\n\n팀의 운명이, 그리고 강태의 미래가 다음 타석에 달려있다.\n\n이제, 타석에 오르기 전인 그에게 다가가 조언을 해주자.",
+          "image": "./static/images/chatbot/8_month_dugout.png"
         }
       ],
       "completion_action": "start_chat_mode"
@@ -230,7 +214,7 @@
       "title": "결과: 역전 만루 홈런!",
       "pages": [
         {
-          "text": "당신의 조언을 들은 강태의 눈빛이 달라졌다. 그는 결심한 듯 심호흡을 하고 타석에 들어섰다.\n\n쨍!! 하는 금속음과 함께, 공은 밤하늘을 가르며 날아갔다.\n\n\"넘어갔습니다! 서강태! 끝내기 만루 홈런! 기적 같은 역전승입니다!\"",
+          "text": "당신의 조언을 들은 강태의 눈빛이 달라졌다. 그는 결심한 듯 심호흡을 하고 타석에 들어섰다.\n\n쨍!! 하는 금속음과 함께, 공은 하늘을 가르며 날아갔다.\n\n\"넘어갔습니다! 서강태! 끝내기 만루 홈런! 기적 같은 역전승입니다!\"",
           "image": "./static/images/chatbot/cheers1.png"
         }
       ],
@@ -243,7 +227,7 @@
       "title": "결과: 동점 적시타!",
       "pages": [
         {
-          "text": "당신의 조언을 되새긴 강태가 집중력을 끌어올렸다.\n\n날카로운 타구음과 함께 공은 2루수 옆을 꿰뚫는 안타가 되었다! 주자 두 명이 홈으로 들어오며 극적인 동점. 팀은 패배의 위기에서 벗어났다.",
+          "text": "당신의 조언을 되새긴 강태가 집중력을 끌어올렸다.\n\n날카로운 타구음과 함께 공은 2루수 옆을 꿰뚫는 안타가 되었다! 주자 한 명이 홈으로 들어오며 극적인 동점. 팀은 패배의 위기에서 벗어났다.",
           "image": "./static/images/chatbot/cheers2.png"
         },
         {
@@ -260,7 +244,7 @@
       "title": "결과: 통한의 삼진",
       "pages": [
         {
-          "text": "당신의 조언에도 불구하고, 강태의 어깨는 무거워보였다.\n\n결국 그의 방망이는 허공을 갈랐고, 마지막 아웃카운트가 올라갔다.\n\n강태는 고개를 숙인 채 더그아웃으로 들어왔다. 그의 뒷모습에서 깊은 아쉬움이 느껴졌다.",
+          "text": "당신의 조언에도 불구하고, 강태의 어깨는 무거워보였다.\n\n결국 그의 방망이는 허공을 갈랐고, 마지막 아웃카운트가 올라갔다.\n\n강태는 고개를 숙인 채 벤치로 들어왔다. 그의 뒷모습에서 깊은 아쉬움이 느껴졌다.",
           "image": "./static/images/chatbot/ballpark.png"
         }
       ],
@@ -317,15 +301,15 @@
       "pages": [
         {
           "text": "9월.\n\n드디어 드래프트의 날이 왔다.\n\n강태와 함께한 6개월이 이 순간을 위한 것이었다.",
-          "image": null
+          "image": "./static/images/chatbot/9_month.png"
         },
         {
-          "text": "\"코치님, 준비됐어요. 이제 제 진짜 실력을 보여드릴게요!\"\n\n강태가 자신감 넘치는 표정으로 말한다.\n\n당신과 함께한 시간이 그를 완전히 바꿔놓았다.",
-          "image": null
+          "text": "\"그동안 감사했어요 코치님 덕분에 많이 성장했습니다.\"\n\n강태가 자신감 넘치는 표정으로 말한다.\n\n당신과 함께한 시간이 그를 완전히 바꿔놓았다.",
+          "image": "./static/images/chatbot/9_month.png"
         },
         {
           "text": "이제 결과를 확인할 시간이다.\n\n강태는 어떤 평가를 받을까?\n\n당신의 노력이 결실을 맺을 것인가?",
-          "image": null
+          "image": "./static/images/chatbot/9_month.png"
         }
       ],
       "completion_action": "determine_ending"
@@ -336,29 +320,29 @@
       "id": "S",
       "title": "꿈의 무대, 더 빅 리그",
       "pages": [
-        {"text": "믿을 수 없는 소식이 전해졌다. 메이저리그 스카우터가 당신의 잠재력을 높이 평가하여, 태평양 건너 꿈의 무대로 당신을 초대했다!", "image": "./static/images/chatbot/cheers1.png"},
-        {"text": "'코치님... 저, 메이저리그에 갑니다.' 그의 목소리는 떨렸지만, 눈은 그 어느 때보다 빛나고 있었다. 당신과 그의 땀이 만든 기적이었다.", "image": "./static/images/chatbot/cheers1.png"}
+        {"text": "믿을 수 없는 소식이 전해졌다. 메이저리그 스카우터가 당신의 잠재력을 높이 평가하여, 태평양 건너 꿈의 무대로 당신을 초대했다!", "image": "./static/images/chatbot/ending1_major.png"},
+        {"text": "'코치님... 저, 메이저리그에 갑니다.' 그의 목소리는 떨렸지만, 눈은 그 어느 때보다 빛나고 있었다. 당신과 그의 땀이 만든 기적이었다.", "image": "./static/images/chatbot/ending1_major.png"}
       ]
     },
     "A1": {
       "id": "A1",
       "title": "전설의 시작",
-      "pages": [{"text": "드래프트 1라운드. 가장 먼저 당신의 이름이 불렸다. 모두가 당신을 주목한다. 새로운 전설이 시작되는 순간이다.", "image": "./static/images/chatbot/cheers1.png"}]
+      "pages": [{"text": "드래프트 1라운드. 가장 먼저 당신의 이름이 불렸다. 모두가 당신을 주목한다. 새로운 전설이 시작되는 순간이다.", "image": "./static/images/chatbot/ending2_round1.png"}]
     },
-    "A2": {"id": "A2", "title": "빛나는 유망주", "pages": [{"text": "드래프트 2라운드. 안정적인 상위권 지명. 당신의 가치를 증명했다.", "image": "./static/images/chatbot/cheers1.png"}]},
-    "A3": {"id": "A3", "title": "프로의 문턱을 넘다", "pages": [{"text": "드래프트 3라운드. 프로의 문턱을 넘었다. 이제 진짜 경기가 시작된다.", "image": "./static/images/chatbot/cheers1.png"}]},
-    "A4": {"id": "A4", "title": "아쉬운 상위 라운드", "pages": [{"text": "드래프트 4라운드. 기대보다 아쉬운 결과지만, 당신의 잠재력은 여전하다.", "image": "./static/images/chatbot/cheers1.png"}]},
-    "B1": {"id": "B1", "title": "흙 속의 진주", "pages": [{"text": "드래프트 5라운드. 중위권의 반란이 시작된다. 당신이 그 주인공이다.", "image": "./static/images/chatbot/cheers2.png"}]},
-    "B2": {"id": "B2", "title": "늦게 핀 꽃", "pages": [{"text": "드래프트 6라운드. 끈기와 노력으로 얻어낸 소중한 결과다.", "image": "./static/images/chatbot/cheers2.png"}]},
-    "B3": {"id": "B3", "title": "운보다 끈기였다", "pages": [{"text": "드래프트 7라운드. 결코 포기하지 않은 자의 승리다.", "image": "./static/images/chatbot/cheers2.png"}]},
-    "B4": {"id": "B4", "title": "마지막 이름", "pages": [{"text": "드래프트 8라운드. 문은 좁았지만, 당신은 그 문을 통과했다.", "image": "./static/images/chatbot/cheers2.png"}]},
-    "C1": {"id": "C1", "title": "다시 9회 말로", "pages": [{"text": "드래프트 9라운드. 아슬아슬하게 프로의 꿈을 잡았다. 이제부터가 진짜 시작이다.", "image": "./static/images/chatbot/ballpark.png"}]},
-    "C2": {"id": "C2", "title": "한 번 더 성장의 마운드로", "pages": [{"text": "드래프트 10라운드. 마지막 기회를 놓치지 않았다.", "image": "./static/images/chatbot/ballpark.png"}]},
-    "C3": {"id": "C3", "title": "미래를 준비하는 투구폼", "pages": [{"text": "드래프트 11라운드. 마지막으로 이름이 불렸다. 이제 당신의 가치를 증명할 시간이다.", "image": "./static/images/chatbot/ballpark.png"}]},
-    "C4": {"id": "C4", "title": "다시 돌아간다", "pages": [{"text": "아쉽게도 프로 구단의 선택을 받지 못했다. 하지만 아직 기회는 있다. 대학교에서 실력을 더 갈고닦아 4년 뒤를 노리기로 했다.", "image": "./static/images/chatbot/ballpark.png"}]},
-    "D1": {"id": "D1", "title": "아직 꺼지지 않은 불꽃", "pages": [{"text": "프로의 벽은 높았다. 하지만 야구를 포기할 수 없었다. 당신은 독립구단에 입단하여 다시 한번 기회를 엿보기로 했다.", "image": null}]},
-    "D2": {"id": "D2", "title": "마이너의 영웅", "pages": [{"text": "독립구단에서 다시 시작한다. 언젠가 다시 불려질 이름을 위해.", "image": null}]},
-    "D3": {"id": "D3", "title": "언제나 마음속엔 마운드가", "pages": [{"text": "결국 프로의 꿈은 멀었다. 하지만 당신의 마음속엔 언제나 푸른 마운드가 있을 것이다.", "image": null}]},
-    "D4": {"id": "D4", "title": "끝이 아닌, 다른 시작", "pages": [{"text": "치열했던 경쟁 끝에, 당신은 배트를 내려놓기로 결심했다. 야구는 끝났지만, 당신의 인생은 이제부터 시작이다.", "image": null}]}
+    "A2": {"id": "A2", "title": "빛나는 유망주", "pages": [{"text": "드래프트 2라운드. 안정적인 상위권 지명. 당신의 가치를 증명했다.", "image": "./static/images/chatbot/ending3_round2_4.png"}]},
+    "A3": {"id": "A3", "title": "프로의 문턱을 넘다", "pages": [{"text": "드래프트 3라운드. 프로의 문턱을 넘었다. 이제 진짜 경기가 시작된다.", "image": "./static/images/chatbot/ending3_round2_4.png"}]},
+    "A4": {"id": "A4", "title": "아쉬운 상위 라운드", "pages": [{"text": "드래프트 4라운드. 기대보다 아쉬운 결과지만, 당신의 잠재력은 여전하다.", "image": "./static/images/chatbot/ending3_round2_4.png"}]},
+    "B1": {"id": "B1", "title": "흙 속의 진주", "pages": [{"text": "드래프트 5라운드. 중위권의 반란이 시작된다. 당신이 그 주인공이다.", "image": "./static/images/chatbot/ending4_round5_8.png"}]},
+    "B2": {"id": "B2", "title": "늦게 핀 꽃", "pages": [{"text": "드래프트 6라운드. 끈기와 노력으로 얻어낸 소중한 결과다.", "image": "./static/images/chatbot/ending4_round5_8.png"}]},
+    "B3": {"id": "B3", "title": "운보다 끈기였다", "pages": [{"text": "드래프트 7라운드. 결코 포기하지 않은 자의 승리다.", "image": "./static/images/chatbot/ending4_round5_8.png"}]},
+    "B4": {"id": "B4", "title": "마지막 이름", "pages": [{"text": "드래프트 8라운드. 문은 좁았지만, 당신은 그 문을 통과했다.", "image": "./static/images/chatbot/ending4_round5_8.png"}]},
+    "C1": {"id": "C1", "title": "다시 9회 말로", "pages": [{"text": "드래프트 9라운드. 아슬아슬하게 프로의 꿈을 잡았다. 이제부터가 진짜 시작이다.", "image": "./static/images/chatbot/ending5_round9_11.png"}]},
+    "C2": {"id": "C2", "title": "한 번 더 성장의 마운드로", "pages": [{"text": "드래프트 10라운드. 마지막 기회를 놓치지 않았다.", "image": "./static/images/chatbot/ending5_round9_11.png"}]},
+    "C3": {"id": "C3", "title": "미래를 준비하는 투구폼", "pages": [{"text": "드래프트 11라운드. 마지막으로 이름이 불렸다. 이제 당신의 가치를 증명할 시간이다.", "image": "./static/images/chatbot/ending5_round9_11.png"}]},
+    "C4": {"id": "C4", "title": "다시 돌아간다", "pages": [{"text": "아쉽게도 프로 구단의 선택을 받지 못했다. 하지만 아직 기회는 있다. 대학교에서 실력을 더 갈고닦아 4년 뒤를 노리기로 했다.", "image": "./static/images/chatbot/ending6_university.png"}]},
+    "D1": {"id": "D1", "title": "아직 꺼지지 않은 불꽃", "pages": [{"text": "프로의 벽은 높았다. 하지만 야구를 포기할 수 없었다. 당신은 독립구단에 입단하여 다시 한번 기회를 엿보기로 했다.", "image": "./static/images/chatbot/ending7.png"}]},
+    "D2": {"id": "D2", "title": "마이너의 영웅", "pages": [{"text": "독립구단에서 다시 시작한다. 언젠가 다시 불려질 이름을 위해.", "image": "./static/images/chatbot/ending7.png"}]},
+    "D3": {"id": "D3", "title": "언제나 마음속엔 마운드가", "pages": [{"text": "결국 프로의 꿈은 멀었다. 하지만 당신의 마음속엔 언제나 푸른 마운드가 있을 것이다.", "image": "./static/images/chatbot/ending8_giveup.png"}]},
+    "D4": {"id": "D4", "title": "끝이 아닌, 다른 시작", "pages": [{"text": "치열했던 경쟁 끝에, 당신은 배트를 내려놓기로 결심했다. 야구는 끝났지만, 당신의 인생은 이제부터 시작이다.", "image": "./static/images/chatbot/ending8_giveup.png"}]}
   }
 }

@@ -57,6 +57,16 @@ class TrainingManager:
         if month not in TRAINABLE_MONTHS:
             raise ValueError("Training is only available in April, June, and July.")
 
+        # 월별 훈련 횟수 제한 (회복 세션 포함 모든 세션에 적용)
+        max_trainings = {
+            3: 5, 4: 5, 5: 5,  # 초반: 5회
+            6: 4, 7: 4,         # 중반: 4회
+            8: 3, 9: 3          # 대회 준비: 3회
+        }
+        max_count = max_trainings.get(month, 3)
+        if game_state.training_count_this_month >= max_count:
+            raise ValueError(f"이번 달 훈련 횟수를 초과했습니다. (최대 {max_count}회)")
+
         intensity = max(0, min(100, int(intensity)))
         focus_list = self._normalise_focuses(focuses)
         focus_count = len(focus_list)
@@ -66,22 +76,31 @@ class TrainingManager:
             intensity_label = "Recovery Session"
             base_gain = 0
             stamina_change = 10
+            is_recovery_session = True
         elif intensity <= 40:
             intensity_label = "Light Training"
-            base_gain = 1
+            base_gain = 2
             stamina_change = 4
+            is_recovery_session = False
         elif intensity <= 70:
             intensity_label = "Standard Training"
-            base_gain = 2
+            base_gain = 4
             stamina_change = -6
+            is_recovery_session = False
         elif intensity <= 85:
             intensity_label = "Focused Training"
-            base_gain = 3
+            base_gain = 6
             stamina_change = -12
+            is_recovery_session = False
         else:
             intensity_label = "High-Intensity Training"
-            base_gain = 4
+            base_gain = 8
             stamina_change = -20
+            is_recovery_session = False
+
+        # 체력 검증 (회복 세션은 체력과 무관하게 가능)
+        if not is_recovery_session and game_state.stats.stamina < 20:
+            raise ValueError("체력이 너무 낮습니다. 회복 세션(강도 20 이하)을 이용하세요.")
 
         per_stat_gain = self._calculate_stat_gain(base_gain, focus_count, intensity)
 
@@ -126,6 +145,9 @@ class TrainingManager:
             stamina_change=stamina_change,
             summary=summary,
         )
+
+        # 훈련 횟수 증가
+        game_state.training_count_this_month += 1
 
         return TrainingOutcome(
             intensity=intensity,

@@ -224,7 +224,7 @@ MONTH_GUIDES = {
         "goals": ["체력 70 이상", "멘탈 60 이상", "타격 65 이상"]
     },
     8: {
-        "title": "8월 - 막바지 준비",
+        "title": "8월 - 결전의 날",
         "message": "드래프트가 한 달 앞으로! 마지막 점검이 필요합니다.",
         "goals": ["모든 기술/신체 스탯 70 이상", "친밀도 85 이상"]
     },
@@ -360,6 +360,26 @@ def api_advance_month():
         august_tournament_calculated = old_month == 8 and game_state.flags.get('tournament_result') != 'strikeout'
         if game_state.current_month < 9 and not august_tournament_calculated:
             game_state.current_month += 1
+
+            # 월별 체력 회복
+            stamina_recovery = 0
+            if game_state.current_month in [3, 4, 5]:
+                stamina_recovery = 25
+            elif game_state.current_month in [6, 7]:
+                stamina_recovery = 15
+            elif game_state.current_month in [8, 9]:
+                stamina_recovery = 10
+
+            if stamina_recovery > 0:
+                game_state.stats.apply_changes({'stamina': stamina_recovery})
+                print(f"[월 진행] {game_state.current_month}월 시작: 체력 +{stamina_recovery}")
+
+            # 훈련 횟수 리셋
+            game_state.training_count_this_month = 0
+            print(f"[월 진행] 훈련 횟수 리셋")
+
+            # 이전 월 스탯 저장 (전환 스토리북에서 변화량 표시용)
+            game_state.save_previous_month_stats()
 
         new_month = game_state.current_month
 
@@ -639,11 +659,15 @@ def api_training():
         })
 
     except ValueError as e:
-        print(f"[ERROR] 훈련 처리 실패 (검증): {e}")
+        error_msg = str(e)
+        print(f"[WARNING] 훈련 제한 조건: {error_msg}")
+
+        # 체력 부족이나 훈련 횟수 초과는 "경고"로 처리 (오류가 아님)
         return jsonify({
             'success': False,
-            'error': str(e)
-        }), 400
+            'warning': True,  # 경고 플래그
+            'message': error_msg
+        }), 200  # 200 OK로 반환 (정상적인 게임 메커니즘)
     except Exception as e:
         print(f"[ERROR] 훈련 처리 실패: {e}")
         import traceback
@@ -761,6 +785,53 @@ def api_complete_storybook():
         # 스토리북 완료 표시
         game_state.mark_storybook_completed(storybook_id)
 
+        # 특별한 순간 카드 생성 (5월 집 방문, 8월 대회)
+        from services.moment_manager import get_moment_manager
+        moment_mgr = get_moment_manager()
+
+        if storybook_id == "5_main_event":
+            # 5월 집 방문 이벤트 카드 생성
+            card = moment_mgr.create_event_card(
+                category='home_visit',
+                title='보이지 않는 상처',
+                description='강태의 집을 방문해 그의 과거와 깊은 상처를 알게 되었습니다.',
+                month=5,
+                image_url='./static/images/chatbot/5_month_house.png',
+                stats_snapshot=game_state.stats.to_dict()
+            )
+            moment_mgr.add_cards_to_game_state(game_state, [card])
+
+        elif storybook_id in ["8_result_homerun", "8_result_hit", "8_steal_success", "8_steal_fail"]:
+            # 8월 대회 결과 카드 생성 (결과별 다른 제목/설명)
+            tournament_result = game_state.flags.get('tournament_result', 'strikeout')
+
+            if tournament_result == 'homerun':
+                title = '기적의 역전 만루 홈런'
+                description = '9회 말 2사 만루, 강태가 끝내기 만루 홈런을 터뜨렸습니다!'
+                image_url = './static/images/chatbot/cheers1.png'
+            elif tournament_result == 'hit_steal':
+                title = '극적인 도루 성공'
+                description = '동점 적시타 후 도루에 성공하며 트라우마를 극복했습니다!'
+                image_url = './static/images/chatbot/cheers2.png'
+            elif tournament_result == 'hit':
+                title = '동점 적시타'
+                description = '9회 말 2사 만루, 강태가 동점 적시타를 쳐냈습니다!'
+                image_url = './static/images/chatbot/cheers2.png'
+            else:  # strikeout
+                title = '아쉬운 삼진'
+                description = '9회 말 마지막 타석, 아쉽게 삼진을 당했지만 강태는 성장했습니다.'
+                image_url = './static/images/chatbot/ballpark.png'
+
+            card = moment_mgr.create_event_card(
+                category='tournament',
+                title=title,
+                description=description,
+                month=8,
+                image_url=image_url,
+                stats_snapshot=game_state.stats.to_dict()
+            )
+            moment_mgr.add_cards_to_game_state(game_state, [card])
+
         # 스토리북 정보 가져오기
         storybook_manager = get_storybook_manager()
         storybook = storybook_manager.get_storybook(storybook_id)
@@ -853,7 +924,7 @@ def get_month_system_message(storybook_id: str) -> str:
         # === 8월 특수 시퀀스 ===
         # 8월 시작: 타석 직전
         "8_opening": """8월, 대통령배 결승전입니다.
-9회 말 2사 만루, 3:4로 뒤진 상황. 다음 타석은 당신입니다.
+9회 말 2사 만루, 4:3로 뒤진 상황. 다음 타석은 당신입니다.
 이전 타석까지 계속 삼진만 당했습니다.
 더그아웃에 앉아 배트를 쥐고 있습니다. 손이 떨립니다.""",
 
@@ -864,7 +935,7 @@ def get_month_system_message(storybook_id: str) -> str:
 
         # 타석 결과 2: 삼진
         "8_result_strikeout": """방금 삼진을 당했습니다.
-팀이 패배했습니다. 더그아웃으로 돌아왔습니다.
+팀이 패배했습니다. 벤치로 돌아왔습니다.
 아쉬움과 죄책감이 밀려옵니다.""",
 
         # 도루 결과 1: 성공

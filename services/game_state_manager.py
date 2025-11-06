@@ -27,15 +27,15 @@ class PlayerStats:
     intimacy: int = 0      # 친밀도 (0-100)
 
     # 정신 (기본적인 멘탈은 있으나 약점이 명확함)
-    mental: int = 30       # 멘탈
+    mental: int = 35       # 멘탈
 
     # 신체 (고교 선수로서의 기본 피지컬)
-    stamina: int = 40      # 체력
+    stamina: int = 100     # 체력 (게임 밸런스를 위해 100으로 상향)
 
     # 기술 (재능은 있으나 아직 미숙한 상태)
-    batting: int = 35      # 타격 능력
-    speed: int = 40        # 주루 능력
-    defense: int = 40      # 수비 능력
+    batting: int = 40      # 타격 능력
+    speed: int = 25        # 주루 능력 (도루 공포증으로 낮음)
+    defense: int = 35      # 수비 능력
 
     def to_dict(self) -> dict:
         """딕셔너리로 변환"""
@@ -101,6 +101,9 @@ class GameState:
     next_action: Optional[str] = None  # 예: "submit_advice", "decide_steal"
     # <<< 수정 끝 >>>
 
+    # 월별 훈련 횟수 추적
+    training_count_this_month: int = 0
+
     def __post_init__(self):
         """초기화 후 기본값 설정"""
         # stats가 None이거나 PlayerStats 타입이 아니면 새로 생성
@@ -140,7 +143,8 @@ class GameState:
             'current_storybook_id': self.current_storybook_id,
             'storybook_completed': self.storybook_completed,
             'previous_month_stats': self.previous_month_stats,
-            'next_action': self.next_action
+            'next_action': self.next_action,
+            'training_count_this_month': self.training_count_this_month
         }
 
     @classmethod

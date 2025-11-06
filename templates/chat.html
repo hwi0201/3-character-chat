@@ -63,6 +63,17 @@
         background: #336B68;
         color: white;
       }
+      .header-btn {
+        font-size: 1.8rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        transition: transform 0.2s;
+      }
+      .header-btn:hover {
+        transform: scale(1.2);
+      }
 
       /* ========================================
           채팅 책 레이아웃
@@ -145,6 +156,7 @@
         font-weight: 400;
         max-width: 80%;
         line-height: 1.6;
+        white-space: pre-line;
       }
 
       /* 스토리북 모드: 왼쪽 페이지 */
@@ -237,6 +249,7 @@
         flex-direction: column;
         height: 100%;
         padding: 45px;
+        box-sizing: border-box;
         opacity: 1;
         transition: opacity 0.3s ease;
       }
@@ -600,6 +613,7 @@
 
         .month-subtitle {
           font-size: 1em;
+          white-space: pre-line;
         }
 
         .story-text {
@@ -638,9 +652,21 @@
           display: none;
         }
 
-        /* 모바일에서 알림 컨테이너도 숨김 */
+        /* 모바일에서 알림 컨테이너 조정 */
         .notifications-container {
-          display: none;
+          top: 70px;
+          max-width: 95%;
+          padding: 10px 15px;
+          gap: 8px;
+        }
+
+        .notification-item {
+          padding: 10px 16px;
+          font-size: 0.85rem;
+        }
+
+        .notification-title {
+          font-size: 0.85rem;
         }
 
         /* 모바일에서 왼쪽 버튼 그룹 크기 조정 */
@@ -803,12 +829,73 @@
         background: #F0F0F0;
         border-radius: 0;
         overflow: hidden;
+        position: relative;
       }
       .stat-bar {
         height: 100%;
         background: #336B68;
-        transition: width 0.5s ease, background-color 0.3s;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s;
         border-radius: 0;
+      }
+
+      /* 스탯 변화 애니메이션 */
+      .stat-bar.stat-increased {
+        animation: pulse-green 0.6s ease-out;
+      }
+      .stat-bar.stat-decreased {
+        animation: pulse-red 0.6s ease-out;
+      }
+
+      @keyframes pulse-green {
+        0%, 100% { box-shadow: none; }
+        50% { box-shadow: 0 0 15px rgba(76, 175, 80, 0.8); }
+      }
+
+      @keyframes pulse-red {
+        0%, 100% { box-shadow: none; }
+        50% { box-shadow: 0 0 15px rgba(244, 67, 54, 0.8); }
+      }
+
+      /* 변화량 표시 */
+      .stat-change-indicator {
+        position: absolute;
+        right: 0;
+        top: -25px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 4px;
+        animation: fade-up 1.2s ease-out forwards;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .stat-change-indicator.positive {
+        color: #4CAF50;
+        background: rgba(76, 175, 80, 0.1);
+      }
+
+      .stat-change-indicator.negative {
+        color: #F44336;
+        background: rgba(244, 67, 54, 0.1);
+      }
+
+      @keyframes fade-up {
+        0% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        70% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+      }
+
+      .stat-item {
+        position: relative;
       }
       .game-info {
         margin-top: 20px;
@@ -828,70 +915,116 @@
         letter-spacing: 0.5px;
       }
 
-      /* 알림 컨테이너 (스탯 패널 아래) */
+      /* 알림 컨테이너 (상단 중앙) */
       .notifications-container {
         position: fixed;
-        right: 20px;
-        top: 550px;
-        width: 300px;
-        max-height: calc(100vh - 570px);
-        overflow-y: auto;
-        z-index: 100;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 12px;
+        max-width: 90%;
+        overflow-x: auto;
+        padding: 15px 20px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 50px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        z-index: 150;
+        border: 1px solid rgba(51, 107, 104, 0.1);
       }
 
-      /* 개별 알림 스타일 */
+      /* 스크롤바 스타일 (가로 스크롤) */
+      .notifications-container::-webkit-scrollbar {
+        height: 6px;
+      }
+
+      .notifications-container::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 3px;
+      }
+
+      .notifications-container::-webkit-scrollbar-thumb {
+        background: #336B68;
+        border-radius: 3px;
+      }
+
+      /* 개별 알림 스타일 (칩 형태) */
       .notification-item {
         background: white;
-        border-radius: 2px;
-        margin-bottom: 12px;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 25px;
+        padding: 12px 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid #336B68;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        animation: slideInUp 0.3s ease;
+        position: relative;
         overflow: hidden;
-        animation: slideInRight 0.3s;
-        border: 1px solid #E8E8E8;
+        flex-shrink: 0;
       }
 
-      @keyframes slideInRight {
+      @keyframes slideInUp {
         from {
-          transform: translateX(100%);
+          transform: translateY(50px);
           opacity: 0;
         }
         to {
-          transform: translateX(0);
+          transform: translateY(0);
           opacity: 1;
         }
       }
 
-      .notification-header {
-        padding: 16px;
-        cursor: pointer;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        transition: background 0.2s;
-      }
-
-      .notification-header:hover {
-        background: #FAFAF8;
-      }
-
-      .notification-item.event .notification-header {
+      .notification-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 20px rgba(51, 107, 104, 0.3);
         background: #336B68;
         color: white;
       }
 
-      .notification-item.hint .notification-header {
+      .notification-item.hint {
         background: #FFF9E6;
-        border-left: 4px solid #B8860B;
+        border-color: #B8860B;
+      }
+
+      .notification-item.hint:hover {
+        background: #B8860B;
+        color: white;
+      }
+
+      .notification-item.event {
+        background: #336B68;
+        color: white;
+        border-color: #2C5C59;
+      }
+
+      .notification-item.event:hover {
+        background: #2C5C59;
+        transform: translateY(-5px) scale(1.05);
+      }
+
+      .notification-item.warning {
+        background: #FFF3CD;
+        border: 2px solid #FF9800;
+        color: #856404;
+        transition: all 0.3s ease;
+      }
+
+      .notification-item.warning:hover {
+        background: #FFC107;
+        color: white;
       }
 
       .notification-title {
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         font-weight: 700;
-        flex: 1;
         display: flex;
         align-items: center;
-        gap: 10px;
-        text-transform: uppercase;
+        gap: 8px;
         letter-spacing: 0.3px;
       }
 
@@ -899,16 +1032,17 @@
         background: none;
         border: none;
         color: inherit;
-        font-size: 1.3rem;
+        font-size: 1.1rem;
         cursor: pointer;
         padding: 0;
-        width: 28px;
-        height: 28px;
+        width: 22px;
+        height: 22px;
         display: flex;
         align-items: center;
         justify-content: center;
         opacity: 0.7;
         transition: opacity 0.2s;
+        margin-left: 8px;
       }
 
       .notification-close:hover {
@@ -916,22 +1050,50 @@
       }
 
       .notification-body {
-        padding: 16px;
         display: none;
-        border-top: 1px solid #E8E8E8;
-        line-height: 1.7;
-        font-size: 0.9rem;
-        color: #333;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        white-space: normal;
+        line-height: 1.5;
+      }
+
+      /* 확장된 알림 스타일 */
+      .notification-item.expanded {
+        flex-direction: column;
+        align-items: flex-start;
+        white-space: normal;
+        max-width: 400px;
       }
 
       .notification-item.expanded .notification-body {
         display: block;
       }
 
+      .notification-item.expanded .notification-header {
+        width: 100%;
+      }
+
+      .notification-item.hint.expanded .notification-body {
+        border-top-color: rgba(184, 134, 11, 0.3);
+      }
+
+      .notification-item.event.expanded .notification-body {
+        border-top-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .notification-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        cursor: pointer;
+      }
+
       .notification-badge {
         background: rgba(255, 255, 255, 0.25);
-        padding: 3px 10px;
-        border-radius: 2px;
+        padding: 3px 8px;
+        border-radius: 12px;
         font-size: 0.7rem;
         font-weight: 700;
         text-transform: uppercase;
@@ -2017,14 +2179,16 @@
       .training-modal__content {
         background: #ffffff;
         border-radius: 2px;
-        width: min(450px, 90%);
+        width: min(550px, 90%);
         padding: 40px;
         box-shadow: 0 12px 50px rgba(0, 0, 0, 0.3);
         position: relative;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 24px;
         border: 1px solid #E8E8E8;
+        max-height: 90vh;
+        overflow-y: auto;
       }
 
       .training-modal__close {
@@ -2042,6 +2206,7 @@
         align-items: center;
         justify-content: center;
         transition: color 0.2s;
+        z-index: 10;
       }
 
       .training-modal__close:hover {
@@ -2064,38 +2229,113 @@
         line-height: 1.6;
       }
 
+      /* 훈련 강도 컨트롤 */
+      .training-control {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
       .training-control label {
         display: block;
         font-weight: 700;
-        margin-bottom: 10px;
+        margin-bottom: 0;
         color: #333;
         text-transform: uppercase;
         letter-spacing: 0.3px;
         font-size: 0.9rem;
+      }
+
+      .intensity-slider-container {
+        position: relative;
+        padding-bottom: 32px;
       }
 
       #training-intensity {
         width: 100%;
-        height: 6px;
+        height: 8px;
         cursor: pointer;
+        appearance: none;
+        background: linear-gradient(to right, #4CAF50 0%, #FFC107 50%, #F44336 100%);
+        border-radius: 4px;
+        outline: none;
+      }
+
+      #training-intensity::-webkit-slider-thumb {
+        appearance: none;
+        width: 24px;
+        height: 24px;
+        background: white;
+        border: 3px solid #336B68;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s;
+      }
+
+      #training-intensity::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
+        box-shadow: 0 4px 12px rgba(51, 107, 104, 0.4);
+      }
+
+      #training-intensity::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+        background: white;
+        border: 3px solid #336B68;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s;
+      }
+
+      #training-intensity::-moz-range-thumb:hover {
+        transform: scale(1.2);
+        box-shadow: 0 4px 12px rgba(51, 107, 104, 0.4);
+      }
+
+      .intensity-markers {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 8px;
+        position: absolute;
+        width: 100%;
+        top: 12px;
+      }
+
+      .intensity-marker {
+        font-size: 0.75rem;
+        color: #999;
+        font-weight: 600;
+        cursor: pointer;
+        transition: color 0.2s;
+      }
+
+      .intensity-marker:hover {
+        color: #336B68;
       }
 
       .training-intensity-label {
-        text-align: right;
-        font-size: 0.9rem;
-        color: #666;
-        font-weight: 600;
-        margin-top: 8px;
+        text-align: center;
+        font-size: 1rem;
+        color: #1A1A1A;
+        font-weight: 700;
+        margin-top: 4px;
+        padding: 10px;
+        background: #FAFAF8;
+        border-radius: 2px;
+        border-left: 4px solid #336B68;
       }
 
-      .training-focus {
+      /* 훈련 집중 영역 카드 */
+      .training-focus-section {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 16px;
       }
 
-      .training-focus p {
-        margin: 0 0 8px 0;
+      .training-focus-title {
+        margin: 0;
         font-weight: 700;
         color: #333;
         text-transform: uppercase;
@@ -2103,32 +2343,91 @@
         font-size: 0.9rem;
       }
 
-      .training-focus label {
+      .training-focus-cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+
+      .training-card {
+        background: white;
+        border: 2px solid #E8E8E8;
+        border-radius: 4px;
+        padding: 20px 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 10px;
-        font-size: 0.95rem;
-        color: #555;
-        font-weight: 500;
-        cursor: pointer;
-        padding: 8px;
-        border-radius: 2px;
-        transition: background 0.2s;
+        gap: 8px;
+        position: relative;
+        overflow: hidden;
       }
 
-      .training-focus label:hover {
-        background: #FAFAF8;
+      .training-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: #E8E8E8;
+        transition: all 0.3s ease;
       }
 
-      .training-focus input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        cursor: pointer;
+      .training-card:hover {
+        border-color: #336B68;
+        transform: translateY(-4px);
+        box-shadow: 0 6px 20px rgba(51, 107, 104, 0.15);
+      }
+
+      .training-card.active {
+        border-color: #336B68;
+        background: linear-gradient(135deg, #f5f9f9 0%, #ffffff 100%);
+        box-shadow: 0 4px 16px rgba(51, 107, 104, 0.2);
+      }
+
+      .training-card.active::before {
+        background: #336B68;
+      }
+
+      .training-card-icon {
+        font-size: 2.5rem;
+        transition: transform 0.3s ease;
+      }
+
+      .training-card:hover .training-card-icon {
+        transform: scale(1.15) rotate(5deg);
+      }
+
+      .training-card.active .training-card-icon {
+        animation: bounce 0.6s ease;
+      }
+
+      @keyframes bounce {
+        0%, 100% { transform: scale(1) translateY(0); }
+        50% { transform: scale(1.1) translateY(-6px); }
+      }
+
+      .training-card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1A1A1A;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      .training-card-desc {
+        font-size: 0.8rem;
+        color: #999;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
 
       .training-submit-btn {
-        margin-top: 12px;
-        padding: 16px 20px;
+        margin-top: 8px;
+        padding: 18px 24px;
         border: none;
         border-radius: 2px;
         background: #336B68;
@@ -2138,26 +2437,395 @@
         transition: all 0.2s;
         text-transform: uppercase;
         letter-spacing: 0.8px;
-        font-size: 1rem;
+        font-size: 1.05rem;
+        box-shadow: 0 4px 12px rgba(51, 107, 104, 0.2);
       }
 
       .training-submit-btn:hover {
         background: #2C5C59;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(51, 107, 104, 0.3);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(51, 107, 104, 0.35);
+      }
+
+      .training-submit-btn:active {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(51, 107, 104, 0.3);
+      }
+
+      /* 모바일 반응형 */
+      @media (max-width: 600px) {
+        .training-focus-cards {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+
+        .training-card {
+          padding: 16px;
+        }
+
+        .training-modal__content {
+          padding: 30px 24px;
+        }
+      }
+
+      /* ============================================================================ */
+      /* 특별한 순간 모달 */
+      /* ============================================================================ */
+      .moments-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.75);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1300;
+        padding: 20px;
+      }
+
+      .moments-modal.open {
+        display: flex;
+      }
+
+      .moments-modal__content {
+        background: #ffffff;
+        border-radius: 2px;
+        width: min(700px, 95%);
+        max-height: 90vh;
+        padding: 40px;
+        box-shadow: 0 12px 50px rgba(0, 0, 0, 0.3);
+        position: relative;
+        overflow-y: auto;
+        color: #1A1A1A;
+      }
+
+      .moments-modal__close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        border: none;
+        background: transparent;
+        font-size: 1.8rem;
+        cursor: pointer;
+        color: #666;
+        transition: color 0.2s;
+      }
+
+      .moments-modal__close:hover {
+        color: #336B68;
+      }
+
+      .moments-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        color: #1A1A1A;
+      }
+
+      .moments-list p {
+        color: #1A1A1A !important;
+      }
+
+      /* 이벤트 카드 (이미지 포함) */
+      .moment-card {
+        background: white;
+        border: 2px solid #E8E8E8;
+        border-radius: 8px;
+        padding: 0;
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .moment-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      }
+
+      .moment-card-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+      }
+
+      .moment-card-content {
+        padding: 20px;
+        color: #1A1A1A;
+      }
+
+      .moment-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .moment-card-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #1A1A1A !important;
+        margin: 0;
+      }
+
+      .moment-card-month {
+        font-size: 0.9rem;
+        color: #666 !important;
+        font-weight: 600;
+      }
+
+      .moment-card-description {
+        color: #555 !important;
+        line-height: 1.6;
+        margin: 0;
+      }
+
+      /* Force dark text on event cards too */
+      .moment-card:not(.milestone) .moment-card-content *,
+      .moment-card:not(.milestone) h3,
+      .moment-card:not(.milestone) p,
+      .moment-card:not(.milestone) span {
+        color: inherit !important;
+      }
+
+      /* 마일스톤 카드 (그라데이션 배경) */
+      .moment-card.milestone {
+        background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%) !important;
+        border: none !important;
+        color: #1A1A1A !important;
+      }
+
+      .moment-card.milestone .moment-card-content {
+        position: relative;
+        color: #1A1A1A !important;
+      }
+
+      .moment-card.milestone .moment-card-emoji {
+        font-size: 3rem;
+        margin-bottom: 12px;
+        animation: pulse 2s infinite;
+      }
+
+      .moment-card.milestone .moment-card-title,
+      .moment-card.milestone .moment-card-description,
+      .moment-card.milestone .moment-card-month {
+        color: #1A1A1A !important;
+      }
+
+      /* Force dark text on ALL milestone card elements */
+      .moment-card.milestone *,
+      .moment-card.milestone h3,
+      .moment-card.milestone p,
+      .moment-card.milestone span {
+        color: #1A1A1A !important;
+      }
+
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+
+      /* ============================================================================ */
+      /* 훈련 결과 카드 애니메이션 */
+      /* ============================================================================ */
+      .training-result-card {
+        background: white;
+        border: 2px solid #336B68;
+        border-radius: 4px;
+        padding: 24px;
+        margin: 16px 5%;
+        box-shadow: 0 8px 24px rgba(51, 107, 104, 0.2);
+        animation: flipIn 0.6s ease-out;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .training-result-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, #336B68 0%, #4CAF50 100%);
+      }
+
+      @keyframes flipIn {
+        0% {
+          opacity: 0;
+          transform: perspective(1000px) rotateX(-90deg);
+        }
+        50% {
+          opacity: 0.5;
+          transform: perspective(1000px) rotateX(10deg);
+        }
+        100% {
+          opacity: 1;
+          transform: perspective(1000px) rotateX(0deg);
+        }
+      }
+
+      .training-result-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 16px;
+        padding-bottom: 14px;
+        border-bottom: 2px solid #E8E8E8;
+      }
+
+      .training-result-icon {
+        font-size: 2.8rem;
+        animation: pulse 2s infinite;
+        flex-shrink: 0;
+      }
+
+      .training-result-title {
+        flex: 1;
+      }
+
+      .training-result-title h3 {
+        margin: 0;
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #336B68;
+        letter-spacing: 0.5px;
+      }
+
+      .training-result-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+      }
+
+      .training-result-stat-item {
+        background: #FAFAF8;
+        padding: 14px;
+        border-radius: 4px;
+        border-left: 4px solid #336B68;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+      }
+
+      .training-result-stat-item:hover {
+        background: #f5f9f9;
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(51, 107, 104, 0.1);
+      }
+
+      .training-result-stat-label {
+        font-size: 0.9rem;
+        color: #666;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      .training-result-stat-value {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #336B68;
+      }
+
+      .training-result-stat-value.positive {
+        color: #4CAF50;
+      }
+
+      .training-result-stat-value.negative {
+        color: #F44336;
+      }
+
+      .training-result-stat-value.neutral {
+        color: #FFC107;
+      }
+
+      /* ============================================================================ */
+      /* 초기화 로딩 오버레이 */
+      /* ============================================================================ */
+      .init-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 1;
+        transition: opacity 0.4s ease;
+      }
+
+      .init-overlay:not(.active) {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .init-content {
+        text-align: center;
+        color: white;
+        animation: fadeInUp 0.5s ease-out;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .loading-spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid rgba(255, 255, 255, 0.2);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 30px;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .init-content p {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0;
+        letter-spacing: 0.5px;
       }
 
     </style>
   </head>
   <body>
+    <!-- 초기화 로딩 오버레이 -->
+    <div id="init-overlay" class="init-overlay active">
+      <div class="init-content">
+        <div class="loading-spinner"></div>
+        <p>게임을 불러오는 중...</p>
+      </div>
+    </div>
     <header class="header">
+      <div style="width: 100px;">
+        <button
+          class="header-btn"
+          onclick="openMomentsModal()"
+          title="특별한 순간"
+        >
+          ✨
+        </button>
+      </div>
       <div class="header-center">{{ bot_name }}</div>
-      <button
-        class="close-btn"
-        onclick="window.location.href='{{ url_for('index') }}'"
-      >
-        &times;
-      </button>
+      <div style="width: 100px; text-align: right;">
+        <button
+          class="close-btn"
+          onclick="window.location.href='{{ url_for('index') }}'"
+        >
+          &times;
+        </button>
+      </div>
     </header>
 
     <!-- <<< 수정 시작: 스탯 패널 전체를 최신 기획에 맞게 업데이트 >>> -->
@@ -2567,18 +3235,64 @@
         <button id="training-close" class="training-modal__close">&times;</button>
         <h2>훈련 조절</h2>
         <p class="training-description">강도를 조절하고 집중할 항목을 선택하세요.</p>
+
+        <!-- 훈련 강도 섹션 -->
         <div class="training-control">
           <label for="training-intensity">훈련 강도</label>
-          <input type="range" id="training-intensity" min="0" max="100" step="5" value="60" />
+          <div class="intensity-slider-container">
+            <input type="range" id="training-intensity" min="0" max="100" step="5" value="60" />
+            <div class="intensity-markers">
+              <span class="intensity-marker" data-value="0">휴식</span>
+              <span class="intensity-marker" data-value="40">가벼운</span>
+              <span class="intensity-marker" data-value="70">표준</span>
+              <span class="intensity-marker" data-value="85">집중</span>
+              <span class="intensity-marker" data-value="100">고강도</span>
+            </div>
+          </div>
           <div id="training-intensity-label" class="training-intensity-label">강도 60 - 기본 훈련</div>
         </div>
-        <div class="training-focus">
-          <p>집중 영역</p>
-          <label><input type="checkbox" name="training-focus" value="batting" checked /> 타격</label>
-          <label><input type="checkbox" name="training-focus" value="speed" /> 주루</label>
-          <label><input type="checkbox" name="training-focus" value="defense" /> 수비</label>
+
+        <!-- 훈련 집중 영역 (카드 형식) -->
+        <div class="training-focus-section">
+          <p class="training-focus-title">집중 영역</p>
+          <div class="training-focus-cards">
+            <!-- 타격 카드 -->
+            <div class="training-card active" data-focus="batting">
+              <div class="training-card-icon">🏏</div>
+              <div class="training-card-title">타격</div>
+              <div class="training-card-desc">Batting</div>
+              <input type="checkbox" name="training-focus" value="batting" checked style="display: none;" />
+            </div>
+            <!-- 주루 카드 -->
+            <div class="training-card" data-focus="speed">
+              <div class="training-card-icon">🏃</div>
+              <div class="training-card-title">주루</div>
+              <div class="training-card-desc">Speed</div>
+              <input type="checkbox" name="training-focus" value="speed" style="display: none;" />
+            </div>
+            <!-- 수비 카드 -->
+            <div class="training-card" data-focus="defense">
+              <div class="training-card-icon">⚾</div>
+              <div class="training-card-title">수비</div>
+              <div class="training-card-desc">Defense</div>
+              <input type="checkbox" name="training-focus" value="defense" style="display: none;" />
+            </div>
+          </div>
         </div>
+
         <button id="training-submit" class="training-submit-btn">훈련 시작</button>
+      </div>
+    </div>
+
+    <!-- 특별한 순간 모달 -->
+    <div id="moments-modal" class="moments-modal">
+      <div class="moments-modal__content">
+        <button class="moments-modal__close" onclick="closeMomentsModal()">&times;</button>
+        <h2 style="margin-top: 0; color: #336B68;">✨ 특별한 순간</h2>
+        <p style="color: #666; margin-bottom: 20px;">강태와 함께한 소중한 기억들</p>
+        <div id="moments-list" class="moments-list">
+          <!-- JavaScript로 동적 생성 -->
+        </div>
       </div>
     </div>
 
