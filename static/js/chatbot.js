@@ -416,6 +416,24 @@ async function sendMessage(isInitial = false) {
             // 스트리밍 완료
             console.log('[STREAM] 완료');
 
+          } else if (event.type === 'event_update') {
+            // 이벤트 업데이트 (비동기)
+            console.log('[EVENT] 이벤트 업데이트');
+            const eventInfo = event.content;
+            if (eventInfo && eventInfo.choices) {
+              showEventWithOptions(eventInfo);
+            } else if (eventInfo) {
+              showEventNotification(eventInfo);
+            }
+
+          } else if (event.type === 'hint_update') {
+            // 힌트 업데이트 (비동기, 컨텍스트 포함)
+            console.log('[HINT] 힌트 업데이트');
+            const hintInfo = event.content;
+            if (hintInfo && hintInfo.hint) {
+              showHintWithContext(hintInfo);
+            }
+
           } else if (event.type === 'error') {
             // 오류 처리
             console.error('[STREAM] 오류:', event.content);
@@ -691,7 +709,7 @@ function handleChatMetadata(data) {
     console.log("💖 친밀도 레벨:", data.debug.game_state.intimacy_level);
 
     console.group("📊 스탯 변화");
-    if (Object.keys(data.debug.stat_changes.changes).length > 0) {
+    if (data.debug.stat_changes && Object.keys(data.debug.stat_changes.changes).length > 0) {
       console.log("변화량:", data.debug.stat_changes.changes);
       console.log("이유:", data.debug.stat_changes.reason);
       console.table({
@@ -703,7 +721,7 @@ function handleChatMetadata(data) {
     }
     console.groupEnd();
 
-    if (data.debug.event_check.triggered) {
+    if (data.debug.event_check?.triggered) {
       console.log("🎭 이벤트 발생:", data.debug.event_check.event_name);
     }
 
@@ -963,6 +981,31 @@ function showHintNotification(hint) {
     </div>
     <div class="notification-body">
       ${hint}
+    </div>
+  `;
+
+  container.appendChild(notification);
+}
+
+// 힌트 알림 표시 (컨텍스트 포함)
+function showHintWithContext(hintInfo) {
+  const notifId = `notif-${AppState.counters.notification++}`;
+  const container = document.getElementById("notifications-container");
+  if (!container) return;
+
+  const notification = document.createElement("div");
+  notification.className = "notification-item hint";
+  notification.id = notifId;
+  notification.innerHTML = `
+    <div class="notification-header" onclick="toggleNotification('${notifId}')">
+      <div class="notification-title">
+        💡 힌트
+      </div>
+      <button class="notification-close" onclick="removeNotification(event, '${notifId}')">×</button>
+    </div>
+    <div class="notification-body">
+      ${hintInfo.hint}
+      ${hintInfo.related_message ? `<br><small style="opacity: 0.7;">💬 관련 대화: "${hintInfo.related_message}"</small>` : ''}
     </div>
   `;
 
