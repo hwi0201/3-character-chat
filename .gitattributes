@@ -15,14 +15,14 @@
 # --- OS 별 스크립트 호환성 ---
 *.bat    text eol=crlf
 *.ps1    text eol=crlf
-# --- 이미지 및 미디어 파일 (Git LFS 사용) ---
-*.png filter=lfs diff=lfs merge=lfs -text
-*.jpg filter=lfs diff=lfs merge=lfs -text
-*.jpeg filter=lfs diff=lfs merge=lfs -text
-*.gif filter=lfs diff=lfs merge=lfs -text
-*.mp4 filter=lfs diff=lfs merge=lfs -text
-*.mov filter=lfs diff=lfs merge=lfs -text
-*.webp filter=lfs diff=lfs merge=lfs -text
+# --- 이미지 및 미디어 파일 (바이너리로 관리) ---
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.mp4 binary
+*.mov binary
+*.webp binary
 # --- 모델 및 데이터 파일 (Git LFS 사용) ---
 # PyTorch 모델
 *.pt filter=lfs diff=lfs merge=lfs -text
