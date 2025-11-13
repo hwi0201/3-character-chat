@@ -1,0 +1,37 @@
+{
+  "session_id": "8571851",
+  "current_month": 4,
+  "current_day": 1,
+  "stats": {
+    "intimacy": 0,
+    "mental": 35,
+    "stamina": 100,
+    "batting": 40,
+    "speed": 25,
+    "defense": 35
+  },
+  "flags": {
+    "backstory_revealed": false,
+    "tournament_result": "strikeout",
+    "steal_phobia_overcome": false
+  },
+  "event_history": [],
+  "special_moments": [],
+  "training_schedule": {},
+  "training_history": [],
+  "current_phase": "storybook",
+  "current_storybook_id": "3_to_4_transition",
+  "storybook_completed": {
+    "3_opening": true
+  },
+  "previous_month_stats": {
+    "intimacy": 0,
+    "mental": 35,
+    "stamina": 100,
+    "batting": 40,
+    "speed": 25,
+    "defense": 35
+  },
+  "next_action": null,
+  "training_count_this_month": 0
+}

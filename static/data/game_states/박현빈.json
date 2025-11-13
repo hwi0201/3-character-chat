@@ -1,0 +1,182 @@
+{
+  "session_id": "박현빈",
+  "current_month": 9,
+  "current_day": 1,
+  "stats": {
+    "intimacy": 38,
+    "mental": 41,
+    "stamina": 55,
+    "batting": 70,
+    "speed": 55,
+    "defense": 65
+  },
+  "flags": {
+    "backstory_revealed": true,
+    "tournament_result": "strikeout",
+    "steal_phobia_overcome": false,
+    "conflict_event_completed": true
+  },
+  "event_history": [],
+  "special_moments": [
+    {
+      "id": "event_home_visit_1762424117",
+      "type": "event",
+      "category": "home_visit",
+      "title": "보이지 않는 상처",
+      "description": "강태의 집을 방문해 그의 과거와 깊은 상처를 알게 되었습니다.",
+      "timestamp": "2025-11-06T19:15:17.446500",
+      "month": 5,
+      "image_url": "./static/images/chatbot/5_month_house.png",
+      "visual_data": null,
+      "stats_snapshot": {
+        "intimacy": 12,
+        "mental": 35,
+        "stamina": 100,
+        "batting": 46,
+        "speed": 31,
+        "defense": 41
+      }
+    },
+    {
+      "id": "milestone_intimacy_1762424175",
+      "type": "milestone",
+      "category": "intimacy",
+      "title": "마음이 열리다",
+      "description": "친밀도 30 달성! 선수가 조금씩 마음을 열고 있습니다.",
+      "timestamp": "2025-11-06T19:16:15.463833",
+      "month": 6,
+      "image_url": null,
+      "visual_data": {
+        "gradient": [
+          "#FFC1C1",
+          "#FF9999"
+        ],
+        "emoji": "💗",
+        "milestone": 30
+      },
+      "stats_snapshot": {
+        "intimacy": 30,
+        "mental": 35,
+        "stamina": 100,
+        "batting": 46,
+        "speed": 31,
+        "defense": 41
+      }
+    }
+  ],
+  "training_schedule": {},
+  "training_history": [
+    {
+      "month": 4,
+      "intensity": 100,
+      "intensity_label": "High-Intensity Training",
+      "focuses": [
+        "batting",
+        "speed",
+        "defense"
+      ],
+      "stat_changes": {
+        "batting": 6,
+        "speed": 6,
+        "defense": 6
+      },
+      "stamina_change": -20,
+      "summary": "Month 4 High-Intensity Training focused on Batting, Speed, Defense. Result: Batting +6, Speed +6, Defense +6, Stamina -20."
+    },
+    {
+      "month": 6,
+      "intensity": 100,
+      "intensity_label": "High-Intensity Training",
+      "focuses": [
+        "batting",
+        "speed",
+        "defense"
+      ],
+      "stat_changes": {
+        "batting": 6,
+        "speed": 6,
+        "defense": 6
+      },
+      "stamina_change": -20,
+      "summary": "Month 6 High-Intensity Training focused on Batting, Speed, Defense. Result: Batting +6, Speed +6, Defense +6, Stamina -20."
+    },
+    {
+      "month": 6,
+      "intensity": 100,
+      "intensity_label": "High-Intensity Training",
+      "focuses": [
+        "batting",
+        "speed",
+        "defense"
+      ],
+      "stat_changes": {
+        "batting": 6,
+        "speed": 6,
+        "defense": 6
+      },
+      "stamina_change": -20,
+      "summary": "Month 6 High-Intensity Training focused on Batting, Speed, Defense. Result: Batting +6, Speed +6, Defense +6, Stamina -20."
+    },
+    {
+      "month": 6,
+      "intensity": 100,
+      "intensity_label": "High-Intensity Training",
+      "focuses": [
+        "batting",
+        "speed",
+        "defense"
+      ],
+      "stat_changes": {
+        "batting": 6,
+        "speed": 6,
+        "defense": 6
+      },
+      "stamina_change": -20,
+      "summary": "Month 6 High-Intensity Training focused on Batting, Speed, Defense. Result: Batting +6, Speed +6, Defense +6, Stamina -20."
+    },
+    {
+      "month": 6,
+      "intensity": 100,
+      "intensity_label": "High-Intensity Training",
+      "focuses": [
+        "batting",
+        "speed",
+        "defense"
+      ],
+      "stat_changes": {
+        "batting": 6,
+        "speed": 6,
+        "defense": 6
+      },
+      "stamina_change": -20,
+      "summary": "Month 6 High-Intensity Training focused on Batting, Speed, Defense. Result: Batting +6, Speed +6, Defense +6, Stamina -20."
+    }
+  ],
+  "current_phase": "storybook",
+  "current_storybook_id": "9_opening",
+  "storybook_completed": {
+    "3_opening": true,
+    "3_to_4_transition": true,
+    "4_opening": true,
+    "4_to_5_transition": true,
+    "5_main_event": true,
+    "5_to_6_transition": true,
+    "6_opening": true,
+    "6_to_7_transition": true,
+    "7_opening": true,
+    "7_to_8_transition": true,
+    "8_opening": true,
+    "8_result_strikeout": true,
+    "9_opening": true
+  },
+  "previous_month_stats": {
+    "intimacy": 38,
+    "mental": 47,
+    "stamina": 55,
+    "batting": 70,
+    "speed": 55,
+    "defense": 65
+  },
+  "next_action": null,
+  "training_count_this_month": 0
+}

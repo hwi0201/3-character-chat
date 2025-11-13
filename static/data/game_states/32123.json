@@ -1,0 +1,63 @@
+{
+  "session_id": "32123",
+  "current_month": 6,
+  "current_day": 1,
+  "stats": {
+    "intimacy": 0,
+    "mental": 29,
+    "stamina": 100,
+    "batting": 40,
+    "speed": 25,
+    "defense": 35
+  },
+  "flags": {
+    "backstory_revealed": false,
+    "tournament_result": "strikeout",
+    "steal_phobia_overcome": false
+  },
+  "event_history": [],
+  "special_moments": [
+    {
+      "id": "event_home_visit_1762419670",
+      "type": "event",
+      "category": "home_visit",
+      "title": "보이지 않는 상처",
+      "description": "강태의 집을 방문해 그의 과거와 깊은 상처를 알게 되었습니다.",
+      "timestamp": "2025-11-06T18:01:10.490910",
+      "month": 5,
+      "image_url": "./static/images/chatbot/5_month_house.png",
+      "visual_data": null,
+      "stats_snapshot": {
+        "intimacy": 0,
+        "mental": 35,
+        "stamina": 100,
+        "batting": 40,
+        "speed": 25,
+        "defense": 35
+      }
+    }
+  ],
+  "training_schedule": {},
+  "training_history": [],
+  "current_phase": "chat",
+  "current_storybook_id": null,
+  "storybook_completed": {
+    "3_opening": true,
+    "3_to_4_transition": true,
+    "4_opening": true,
+    "4_to_5_transition": true,
+    "5_main_event": true,
+    "5_to_6_transition": true,
+    "6_opening": true
+  },
+  "previous_month_stats": {
+    "intimacy": 0,
+    "mental": 29,
+    "stamina": 100,
+    "batting": 40,
+    "speed": 25,
+    "defense": 35
+  },
+  "next_action": null,
+  "training_count_this_month": 0
+}
